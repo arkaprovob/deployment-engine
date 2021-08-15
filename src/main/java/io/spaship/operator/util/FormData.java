@@ -26,15 +26,16 @@ public class FormData {
         return this.file.size();
     }
 
-    public String fileLocation(){
+    public String fileLocation() {
         return this.file.uploadedFile().toString();
     }
 
     public URI getFileURI() {
         return this.file.uploadedFile().toUri();
     }
+
     public Path getfilePath() {
-        return this.file.uploadedFile().getFileName();
+        return this.file.uploadedFile().toAbsolutePath();
     }
 
 }

@@ -6,12 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
+import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 
@@ -21,44 +19,61 @@ public class SPAUploadHandler {
     private static final Logger LOG = LoggerFactory.getLogger(SPAUploadHandler.class);
     private final Executor executor = Infrastructure.getDefaultExecutor();
 
+    /*
+     * From Item build the file
+     * Next mapping extract the .spaship file
+     * Next POD,Configmaps,Service,Route,Ingress-Controller creation
+     * */
 
-    public void handleFileUpload(String fileName, URI fileURI,Path path){
+    public void handleFileUpload(Path absoluteFilePath) {
         LOG.debug("Deployment process initiated");
-        extractSpaMapping(fileURI,path);
-        Uni.createFrom().item(()->{
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+
+        Uni.createFrom().item(() -> {
+            pathToFile(absoluteFilePath);
+            simulateTimeConsumingOps(); //TODO remove this block
             return "success";
         }).runSubscriptionOn(executor)
                 .subscribe()
                 .asCompletionStage()
-                .whenComplete((c,e)->{LOG.debug("Deployment complete... {}", Objects.isNull(e));});
+                .whenComplete((c, e) -> {
+                    if (!Objects.isNull(e))
+                        LOG.error(e.getMessage());
+                });
 
     }
 
-    private void extractSpaMapping(URI fromZip,Path path){
-        LOG.debug("incoming URI is {}",fromZip);
+    private void simulateTimeConsumingOps() {
         try {
-            var staticUri = new URI("file:///tmp//operator//xe.zip");
-            fromZip = staticUri;
-            LOG.debug("after modification fromZip is {}",fromZip);
-
-        } catch (URISyntaxException e) {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
             e.printStackTrace();
+            Thread.currentThread().interrupt();
         }
+    }
+
+    private void pathToFile(Path absoluteFilePath) {
+        LOG.debug("absolute absoluteFilePath is {}", absoluteFilePath);
+
+        File spaDistribution = new File(absoluteFilePath.toUri());
+        assert spaDistribution.exists();
+
         try {
-            FileSystems.newFileSystem(path).getRootDirectories().forEach(root->{LOG.debug(root.getFileName().toString());});
+            FileSystems.newFileSystem(Path.of(spaDistribution.getCanonicalPath())).getRootDirectories().forEach(root -> {
+                LOG.debug(root.getFileName().toString());
+            });
         } catch (IOException e) {
             e.printStackTrace();
         }
 
 
+/*        try {
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }*/
+
+
     }
-
-
 
 
 }

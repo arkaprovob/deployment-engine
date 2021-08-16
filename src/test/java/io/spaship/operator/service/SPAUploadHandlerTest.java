@@ -1,6 +1,7 @@
 package io.spaship.operator.service;
 
 import io.quarkus.test.junit.QuarkusTest;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,7 +12,14 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -28,27 +36,91 @@ class SPAUploadHandlerTest {
     void tearDown() {
     }
 
+    String absolutePathOfTestFile = "/home/arkaprovo/IdeaProjects/spa-deployment-operator/src/test/resources/large-dir.zip";
 
-    private void pathToFile() throws URISyntaxException, IOException {
+    private void pathToFileWayOne() throws URISyntaxException, IOException {
 
-        File spaDistribution = new File("/home/arkaprovo/IdeaProjects/spa-deployment-operator/src/test/resources/home-spa.zip");
+        File spaDistribution = new File(absolutePathOfTestFile);
         assert spaDistribution.exists();
         ZipFile zipFile = new ZipFile(spaDistribution.getAbsolutePath());
         Enumeration<? extends ZipEntry> entries = zipFile.entries();
-        int counter = 0;
 
-        while (entries.hasMoreElements()) {
-            counter++;
-            ZipEntry entry = entries.nextElement();
-            InputStream stream = zipFile.getInputStream(entry);
+
+        LocalDateTime start = LocalDateTime.now();
+        LOG.debug("started at {}",start);
+        InputStream inputStream = Collections
+                .list(entries)
+                .parallelStream()
+                .filter(file->file.getName().equals(".spaship"))
+                .findFirst().map(entry-> {
+            try {
+                LOG.debug("file loaded into memory");
+                return zipFile.getInputStream(entry);
+            } catch (IOException e) {
+                throw new RuntimeException(e.getMessage());
+            }
+        }).orElse(null);
+
+        Objects.requireNonNull(inputStream,".spaship not found");
+        String spaMapping;
+        try(inputStream){
+            spaMapping = IOUtils.toString(inputStream,Charset.defaultCharset());
         }
-        LOG.debug("total {} no of items found", counter);
+
+        LocalDateTime end = LocalDateTime.now();
+        LOG.debug("ended {}",end);
+        var difference = Duration.between(start, end).toMillis();
+        LOG.debug(".spaship content is {}",spaMapping);
+        LOG.debug("time taken {}",difference);
+
+    }
+
+    private void pathToFileWayTwo() throws URISyntaxException, IOException {
+
+        File spaDistribution = new File(absolutePathOfTestFile);
+        assert spaDistribution.exists();
+        ZipFile zipFile = new ZipFile(spaDistribution.getAbsolutePath());
+        Enumeration<? extends ZipEntry> entries = zipFile.entries();
+
+
+        LocalDateTime start = LocalDateTime.now();
+        LOG.debug("started at {}",start);
+        InputStream inputStream = Collections
+                .list(entries)
+                .stream()
+                .filter(file->file.getName().equals(".spaship"))
+                .findFirst().map(entry-> {
+                    try {
+                        LOG.debug("file loaded into memory");
+                        return zipFile.getInputStream(entry);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e.getMessage());
+                    }
+                }).orElse(null);
+
+        Objects.requireNonNull(inputStream,".spaship not found");
+        String spaMapping;
+        try(inputStream){
+            spaMapping = IOUtils.toString(inputStream,Charset.defaultCharset());
+        }
+
+        LocalDateTime end = LocalDateTime.now();
+        LOG.debug("ended {}",end);
+        var difference = Duration.between(start, end).toMillis();
+        LOG.debug(".spaship content is {}",spaMapping);
+        LOG.debug("time taken {}",difference);
 
     }
 
     @Test
-    void readZipFile() throws URISyntaxException, IOException {
-        pathToFile();
+    void readZipFileOne() throws URISyntaxException, IOException {
+        pathToFileWayOne();
+        assert true == true;
+    }
+
+    @Test
+    void readZipFileTwo() throws URISyntaxException, IOException {
+        pathToFileWayTwo();
         assert true == true;
     }
 }

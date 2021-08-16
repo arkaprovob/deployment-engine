@@ -1,4 +1,4 @@
-package io.spaship.operator.util;
+package io.spaship.operator.type;
 
 
 import org.jboss.resteasy.reactive.PartType;
@@ -14,6 +14,10 @@ public class FormData {
     @RestForm
     @PartType(MediaType.TEXT_PLAIN)
     public String description;
+
+    @RestForm
+    @PartType(MediaType.TEXT_PLAIN)
+    public String website;
 
     @RestForm("spa")
     public FileUpload file;

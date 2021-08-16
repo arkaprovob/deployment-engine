@@ -1,14 +1,20 @@
 package io.spaship.operator.api;
 
 
+import io.spaship.operator.repo.SharedRepository;
 import io.spaship.operator.service.SPAUploadHandler;
-import io.spaship.operator.util.FormData;
+import io.spaship.operator.type.FormData;
+import lombok.SneakyThrows;
+import org.javatuples.Pair;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.time.LocalDateTime;
+import java.util.Objects;
+import java.util.UUID;
 
 @Path("upload")
 public class SPAUploadController {
@@ -30,19 +36,57 @@ public class SPAUploadController {
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public String uploadSPA(@MultipartForm FormData formData) {
-        String description = logIncomingFormData(formData);
-        spaUploadHandlerService.handleFileUpload(formData.getfilePath());
-        return "SPA: " + description + " deployment In progress";
+        var response = sanity(formData);
+        var fileUploadParams = new Pair<java.nio.file.Path,String>(formData.getfilePath(), response.getValue1());
+
+        String uniqueTracing = UUID.randomUUID().toString();
+        LOG.debug("before while loop");
+        while(SharedRepository.isQueued(formData.website)){
+            rateLimiter();
+            LOG.debug("environment creation for the same website is in progress");
+        }
+        SharedRepository.enqueue(formData.website,new Pair<>(uniqueTracing, LocalDateTime.now()));
+
+        spaUploadHandlerService.handleFileUpload(fileUploadParams);
+        return response.toString();
     }
 
-    private String logIncomingFormData(FormData formData) {
+
+    @GET
+    @Path("/enqueue/{website}")
+    @Produces("text/plain")
+    public Boolean enqueue(@PathParam("website")String website){
+        String uniqueTracing = UUID.randomUUID().toString();
+        return  SharedRepository.enqueue(website,new Pair<>(uniqueTracing, LocalDateTime.now()));
+    }
+
+    @GET
+    @Path("/dequeue/{website}")
+    @Produces("text/plain")
+    public Boolean dequeue(@PathParam("website")String website){
+        return  SharedRepository.dequeue(website);
+    }
+
+    private Pair<String, String> sanity(FormData formData) {
         String description = formData.description;
         String fileName = formData.fileName();
         Long fileSize = formData.fileSize();
         java.nio.file.Path path = formData.getfilePath();
+
+        Objects.requireNonNull(description,"description is missing from the request body");
+        Objects.requireNonNull(fileName,"file name not found");
+        Objects.requireNonNull(fileSize,"file size cannot be null");
+        Objects.requireNonNull(path,"unable to store the file");
+
         LOG.debug("file received description {} , name is {} , size {}, location {} \n",
                 description, fileName, fileSize, path);
-        return description;
+        String processId = UUID.randomUUID().toString();
+        return new Pair<>(description, processId);
+    }
+
+    @SneakyThrows
+    private void rateLimiter(){
+        Thread.sleep(500);
     }
 }
 

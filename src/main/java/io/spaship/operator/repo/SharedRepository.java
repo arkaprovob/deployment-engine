@@ -17,17 +17,17 @@ public class SharedRepository {
 
     public static boolean enqueue(String websiteName, Pair<UUID, LocalDateTime> meta) {
         if (isQueued(websiteName)) {
-            LOG.debug("entry {} already exists",websiteName);
+            LOG.debug("entry {} already exists", websiteName);
             return false;
         }
-        LOG.debug("enqueuing the following details {} of website {}",meta,websiteName);
+        LOG.debug("enqueuing the following details {} of website {}", meta, websiteName);
         environmentLock.put(websiteName, meta);
         return true;
     }
 
     public static boolean dequeue(String websiteName) {
         var value = environmentLock.remove(websiteName);
-        LOG.debug("dequeued the following details {} of website {}",value,websiteName);
+        LOG.debug("dequeued the following details {} of website {}", value, websiteName);
         return !Objects.isNull(value);
     }
 
@@ -35,9 +35,9 @@ public class SharedRepository {
         return !Objects.isNull(environmentLock.get(websiteName));
     }
 
-    public static Pair<UUID, LocalDateTime> getEnvironmentLockMeta(String website){
+    public static Pair<UUID, LocalDateTime> getEnvironmentLockMeta(String website) {
         var value = environmentLock.get(website);
-        LOG.debug("value against entry {} is {}",website,value);
+        LOG.debug("value against entry {} is {}", website, value);
         return value;
     }
 }

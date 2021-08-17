@@ -62,7 +62,7 @@ public class SPAUploadHandler {
 
     }
 
-    private Pair<String,UUID> spaMappingIntoMemory(Triplet<Path, UUID, String> input) {
+    private Pair<String, UUID> spaMappingIntoMemory(Triplet<Path, UUID, String> input) {
         Path absoluteFilePath = input.getValue0();
         LOG.debug("absolute absoluteFilePath is {}", absoluteFilePath);
 
@@ -81,23 +81,20 @@ public class SPAUploadHandler {
             e.printStackTrace();
         }
 
-        return new Pair<>(spaMappingReference,input.getValue1());
+        return new Pair<>(spaMappingReference, input.getValue1());
     }
 
 
-    private Pair<JsonObject,UUID> stringToJson(Pair<String,UUID> pair){
+    private Pair<JsonObject, UUID> stringToJson(Pair<String, UUID> pair) {
         JsonObject spaMapping = new JsonObject(pair.getValue0());
-        return new Pair<>(spaMapping,pair.getValue1());
+        return new Pair<>(spaMapping, pair.getValue1());
     }
 
-    private Boolean createOrUpdateEnvironment(Pair<JsonObject,UUID> inputPair) {
+    private Boolean createOrUpdateEnvironment(Pair<JsonObject, UUID> inputPair) {
         //ReUsableItems.blockFor(8000); //TODO remove this block
         LOG.debug("offloading task to the operator");
         return k8soperator.createOrUpdateEnvironment(inputPair);
     }
-
-
-
 
 
     private InputStream readFromSpaMapping(ZipFile zipFile, Enumeration<? extends ZipEntry> entries) {

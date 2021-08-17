@@ -14,9 +14,7 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Objects;
@@ -27,6 +25,7 @@ import java.util.zip.ZipFile;
 class SPAUploadHandlerTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(SPAUploadHandlerTest.class);
+    String absolutePathOfTestFile = "/home/arkaprovo/IdeaProjects/spa-deployment-operator/src/test/resources/large-dir.zip";
 
     @BeforeEach
     void setUp() {
@@ -35,8 +34,6 @@ class SPAUploadHandlerTest {
     @AfterEach
     void tearDown() {
     }
-
-    String absolutePathOfTestFile = "/home/arkaprovo/IdeaProjects/spa-deployment-operator/src/test/resources/large-dir.zip";
 
     private void pathToFileWayOne() throws URISyntaxException, IOException {
 
@@ -47,31 +44,31 @@ class SPAUploadHandlerTest {
 
 
         LocalDateTime start = LocalDateTime.now();
-        LOG.debug("started at {}",start);
+        LOG.debug("started at {}", start);
         InputStream inputStream = Collections
                 .list(entries)
                 .parallelStream()
-                .filter(file->file.getName().equals(".spaship"))
-                .findFirst().map(entry-> {
-            try {
-                LOG.debug("file loaded into memory");
-                return zipFile.getInputStream(entry);
-            } catch (IOException e) {
-                throw new RuntimeException(e.getMessage());
-            }
-        }).orElse(null);
+                .filter(file -> file.getName().equals(".spaship"))
+                .findFirst().map(entry -> {
+                    try {
+                        LOG.debug("file loaded into memory");
+                        return zipFile.getInputStream(entry);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e.getMessage());
+                    }
+                }).orElse(null);
 
-        Objects.requireNonNull(inputStream,".spaship not found");
+        Objects.requireNonNull(inputStream, ".spaship not found");
         String spaMapping;
-        try(inputStream){
-            spaMapping = IOUtils.toString(inputStream,Charset.defaultCharset());
+        try (inputStream) {
+            spaMapping = IOUtils.toString(inputStream, Charset.defaultCharset());
         }
 
         LocalDateTime end = LocalDateTime.now();
-        LOG.debug("ended {}",end);
+        LOG.debug("ended {}", end);
         var difference = Duration.between(start, end).toMillis();
-        LOG.debug(".spaship content is {}",spaMapping);
-        LOG.debug("time taken {}",difference);
+        LOG.debug(".spaship content is {}", spaMapping);
+        LOG.debug("time taken {}", difference);
 
     }
 
@@ -84,12 +81,12 @@ class SPAUploadHandlerTest {
 
 
         LocalDateTime start = LocalDateTime.now();
-        LOG.debug("started at {}",start);
+        LOG.debug("started at {}", start);
         InputStream inputStream = Collections
                 .list(entries)
                 .stream()
-                .filter(file->file.getName().equals(".spaship"))
-                .findFirst().map(entry-> {
+                .filter(file -> file.getName().equals(".spaship"))
+                .findFirst().map(entry -> {
                     try {
                         LOG.debug("file loaded into memory");
                         return zipFile.getInputStream(entry);
@@ -98,17 +95,17 @@ class SPAUploadHandlerTest {
                     }
                 }).orElse(null);
 
-        Objects.requireNonNull(inputStream,".spaship not found");
+        Objects.requireNonNull(inputStream, ".spaship not found");
         String spaMapping;
-        try(inputStream){
-            spaMapping = IOUtils.toString(inputStream,Charset.defaultCharset());
+        try (inputStream) {
+            spaMapping = IOUtils.toString(inputStream, Charset.defaultCharset());
         }
 
         LocalDateTime end = LocalDateTime.now();
-        LOG.debug("ended {}",end);
+        LOG.debug("ended {}", end);
         var difference = Duration.between(start, end).toMillis();
-        LOG.debug(".spaship content is {}",spaMapping);
-        LOG.debug("time taken {}",difference);
+        LOG.debug(".spaship content is {}", spaMapping);
+        LOG.debug("time taken {}", difference);
 
     }
 

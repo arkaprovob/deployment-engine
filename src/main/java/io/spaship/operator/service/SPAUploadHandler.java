@@ -3,8 +3,10 @@ package io.spaship.operator.service;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.spaship.operator.business.K8SOperator;
+import io.spaship.operator.repo.SharedRepository;
 import org.apache.commons.io.IOUtils;
 import org.javatuples.Pair;
+import org.javatuples.Triplet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,9 +27,8 @@ import java.util.zip.ZipFile;
 public class SPAUploadHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(SPAUploadHandler.class);
-    private final Executor executor = Infrastructure.getDefaultExecutor();
     private static final String SPASHIP_MAPPING_FILE = ".spaship";
-
+    private final Executor executor = Infrastructure.getDefaultExecutor();
     private final K8SOperator k8soperator;
 
     public SPAUploadHandler(K8SOperator k8soperator) {
@@ -40,24 +41,23 @@ public class SPAUploadHandler {
      * Next POD,Configmaps,Service,Route,Ingress-Controller creation
      * */
 
-    public void handleFileUpload(Pair<Path,String> input) {
+    public void handleFileUpload(Triplet<Path, String, String> input) {
         LOG.debug("Deployment process initiated");
 
+        Pair<Path, String> mapExtractionParam = input.removeFrom2();
         Uni.createFrom()
-                .item(() -> spaMappingIntoMemory(input))
+                .item(() -> spaMappingIntoMemory(mapExtractionParam))
                 .runSubscriptionOn(executor)
                 .map(this::createOrUpdateEnvironment)
                 .subscribe()
                 .asCompletionStage()
-                .whenComplete((c, e) -> {
-                    if (!Objects.isNull(e))
-                        LOG.error(e.getMessage());
-
+                .whenComplete((result, exception) -> {
+                    if (!Objects.isNull(exception))
+                        LOG.error(exception.getMessage());
+                    SharedRepository.dequeue(input.getValue2());
                 });
 
     }
-
-
 
 
     private Boolean createOrUpdateEnvironment(String spaship) {
@@ -67,7 +67,7 @@ public class SPAUploadHandler {
     }
 
 
-    private String spaMappingIntoMemory(Pair<Path,String> input) {
+    private String spaMappingIntoMemory(Pair<Path, String> input) {
         Path absoluteFilePath = input.getValue0();
         LOG.debug("absolute absoluteFilePath is {}", absoluteFilePath);
 
@@ -78,13 +78,13 @@ public class SPAUploadHandler {
 
         assert spaDistribution.exists();
 
-        try(ZipFile zipFile = new ZipFile(spaDistribution.getAbsolutePath())) {
+        try (ZipFile zipFile = new ZipFile(spaDistribution.getAbsolutePath())) {
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
             InputStream inputStream = readFromSpaMapping(zipFile, entries);
 
-            Objects.requireNonNull(inputStream,SPASHIP_MAPPING_FILE+" not found");
+            Objects.requireNonNull(inputStream, SPASHIP_MAPPING_FILE + " not found");
 
-            try(inputStream){
+            try (inputStream) {
                 spaMappingReference = IOUtils.toString(inputStream, Charset.defaultCharset());
             }
 

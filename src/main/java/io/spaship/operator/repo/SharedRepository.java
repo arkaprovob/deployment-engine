@@ -12,24 +12,28 @@ import java.util.Objects;
 
 public class SharedRepository {
     private static final Logger LOG = LoggerFactory.getLogger(SharedRepository.class);
-
     // This is used to prevent concurrency issues for environment creation, so that one environment or setup does not get created when
-    private static final Map<String, Pair<String,LocalDateTime>> environmentLock = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<String, Pair<String, LocalDateTime>> environmentLock = Collections.synchronizedMap(new HashMap<>());
 
-    public static boolean enqueue(String websiteName,Pair<String,LocalDateTime> meta){
-        if(isQueued(websiteName)){
+    private SharedRepository() {
+    }
+
+    public static boolean enqueue(String websiteName, Pair<String, LocalDateTime> meta) {
+        if (isQueued(websiteName)) {
             LOG.debug("website already exists");
             return false;
         }
         LOG.debug("website not found, adding ino the list");
-        environmentLock.put(websiteName,meta);
+        environmentLock.put(websiteName, meta);
         return true;
     }
-    public static boolean dequeue(String websiteName){
+
+    public static boolean dequeue(String websiteName) {
         var value = environmentLock.remove(websiteName);
         return !Objects.isNull(value);
     }
-    public static boolean isQueued(String websiteName){
+
+    public static boolean isQueued(String websiteName) {
         return !Objects.isNull(environmentLock.get(websiteName));
     }
 }

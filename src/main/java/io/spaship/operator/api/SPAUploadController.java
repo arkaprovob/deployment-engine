@@ -6,6 +6,7 @@ import io.spaship.operator.service.SPAUploadHandler;
 import io.spaship.operator.type.FormData;
 import lombok.SneakyThrows;
 import org.javatuples.Pair;
+import org.javatuples.Triplet;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,16 +38,9 @@ public class SPAUploadController {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public String uploadSPA(@MultipartForm FormData formData) {
         var response = sanity(formData);
-        var fileUploadParams = new Pair<java.nio.file.Path,String>(formData.getfilePath(), response.getValue1());
+        var fileUploadParams = new Triplet<>(formData.getfilePath(), response.getValue1(), formData.website);
 
-        String uniqueTracing = UUID.randomUUID().toString();
-        LOG.debug("before while loop");
-        while(SharedRepository.isQueued(formData.website)){
-            rateLimiter();
-            LOG.debug("environment creation for the same website is in progress");
-        }
-        SharedRepository.enqueue(formData.website,new Pair<>(uniqueTracing, LocalDateTime.now()));
-
+        SharedRepository.enqueue(formData.website, new Pair<>(response.getValue1(), LocalDateTime.now()));
         spaUploadHandlerService.handleFileUpload(fileUploadParams);
         return response.toString();
     }
@@ -55,16 +49,16 @@ public class SPAUploadController {
     @GET
     @Path("/enqueue/{website}")
     @Produces("text/plain")
-    public Boolean enqueue(@PathParam("website")String website){
+    public Boolean enqueue(@PathParam("website") String website) {
         String uniqueTracing = UUID.randomUUID().toString();
-        return  SharedRepository.enqueue(website,new Pair<>(uniqueTracing, LocalDateTime.now()));
+        return SharedRepository.enqueue(website, new Pair<>(uniqueTracing, LocalDateTime.now()));
     }
 
     @GET
     @Path("/dequeue/{website}")
     @Produces("text/plain")
-    public Boolean dequeue(@PathParam("website")String website){
-        return  SharedRepository.dequeue(website);
+    public Boolean dequeue(@PathParam("website") String website) {
+        return SharedRepository.dequeue(website);
     }
 
     private Pair<String, String> sanity(FormData formData) {
@@ -73,10 +67,10 @@ public class SPAUploadController {
         Long fileSize = formData.fileSize();
         java.nio.file.Path path = formData.getfilePath();
 
-        Objects.requireNonNull(description,"description is missing from the request body");
-        Objects.requireNonNull(fileName,"file name not found");
-        Objects.requireNonNull(fileSize,"file size cannot be null");
-        Objects.requireNonNull(path,"unable to store the file");
+        Objects.requireNonNull(description, "description is missing from the request body");
+        Objects.requireNonNull(fileName, "file name not found");
+        Objects.requireNonNull(fileSize, "file size cannot be null");
+        Objects.requireNonNull(path, "unable to store the file");
 
         LOG.debug("file received description {} , name is {} , size {}, location {} \n",
                 description, fileName, fileSize, path);
@@ -85,8 +79,8 @@ public class SPAUploadController {
     }
 
     @SneakyThrows
-    private void rateLimiter(){
-        Thread.sleep(500);
+    private void rateLimiter(int ms) {
+        Thread.sleep(ms);
     }
 }
 

@@ -4,6 +4,8 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.spaship.operator.business.K8SOperator;
 import io.spaship.operator.repo.SharedRepository;
+import io.spaship.operator.util.ReUsableItems;
+import io.vertx.core.json.JsonObject;
 import org.apache.commons.io.IOUtils;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
@@ -19,6 +21,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -27,7 +30,6 @@ import java.util.zip.ZipFile;
 public class SPAUploadHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(SPAUploadHandler.class);
-    private static final String SPASHIP_MAPPING_FILE = ".spaship";
     private final Executor executor = Infrastructure.getDefaultExecutor();
     private final K8SOperator k8soperator;
 
@@ -41,17 +43,18 @@ public class SPAUploadHandler {
      * Next POD,Configmaps,Service,Route,Ingress-Controller creation
      * */
 
-    public void handleFileUpload(Triplet<Path, String, String> input) {
+    public void handleFileUpload(Triplet<Path, UUID, String> input) {
         LOG.debug("Deployment process initiated");
 
-        Pair<Path, String> mapExtractionParam = input.removeFrom2();
         Uni.createFrom()
-                .item(() -> spaMappingIntoMemory(mapExtractionParam))
+                .item(() -> spaMappingIntoMemory(input))
                 .runSubscriptionOn(executor)
+                .map(this::stringToJson)
                 .map(this::createOrUpdateEnvironment)
                 .subscribe()
                 .asCompletionStage()
                 .whenComplete((result, exception) -> {
+                    LOG.debug("operation completed");
                     if (!Objects.isNull(exception))
                         LOG.error(exception.getMessage());
                     SharedRepository.dequeue(input.getValue2());
@@ -59,51 +62,50 @@ public class SPAUploadHandler {
 
     }
 
-
-    private Boolean createOrUpdateEnvironment(String spaship) {
-        simulateTimeConsumingOps(); //TODO remove this block
-        LOG.debug("task offloaded to operator");
-        return k8soperator.createOrUpdateEnvironment(spaship);
-    }
-
-
-    private String spaMappingIntoMemory(Pair<Path, String> input) {
+    private Pair<String,UUID> spaMappingIntoMemory(Triplet<Path, UUID, String> input) {
         Path absoluteFilePath = input.getValue0();
         LOG.debug("absolute absoluteFilePath is {}", absoluteFilePath);
 
-        simulateTimeConsumingOps(); //TODO remove this block
-
+        //ReUsableItems.blockFor(8000); //TODO remove this block
         File spaDistribution = new File(absoluteFilePath.toUri());
         String spaMappingReference = null;
-
         assert spaDistribution.exists();
-
         try (ZipFile zipFile = new ZipFile(spaDistribution.getAbsolutePath())) {
             Enumeration<? extends ZipEntry> entries = zipFile.entries();
             InputStream inputStream = readFromSpaMapping(zipFile, entries);
-
-            Objects.requireNonNull(inputStream, SPASHIP_MAPPING_FILE + " not found");
-
+            Objects.requireNonNull(inputStream, ReUsableItems.getSpashipMappingFileName() + " not found");
             try (inputStream) {
                 spaMappingReference = IOUtils.toString(inputStream, Charset.defaultCharset());
             }
-
-
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-
-        return spaMappingReference;
-
+        return new Pair<>(spaMappingReference,input.getValue1());
     }
+
+
+    private Pair<JsonObject,UUID> stringToJson(Pair<String,UUID> pair){
+        JsonObject spaMapping = new JsonObject(pair.getValue0());
+        return new Pair<>(spaMapping,pair.getValue1());
+    }
+
+    private Boolean createOrUpdateEnvironment(Pair<JsonObject,UUID> inputPair) {
+        //ReUsableItems.blockFor(8000); //TODO remove this block
+        LOG.debug("offloading task to the operator");
+        return k8soperator.createOrUpdateEnvironment(inputPair);
+    }
+
+
+
+
 
     private InputStream readFromSpaMapping(ZipFile zipFile, Enumeration<? extends ZipEntry> entries) {
         LOG.debug("reading from .spaship input stream");
         return Collections
                 .list(entries)
                 .stream()
-                .filter(file -> file.getName().equals(SPASHIP_MAPPING_FILE))
+                .filter(file -> file.getName().equals(ReUsableItems.getSpashipMappingFileName()))
                 .findFirst().map(entry -> {
                     try {
                         LOG.debug("file loaded into memory");
@@ -113,16 +115,6 @@ public class SPAUploadHandler {
                         return null;
                     }
                 }).orElse(null);
-    }
-
-
-    private void simulateTimeConsumingOps() {
-        try {
-            Thread.sleep(8000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            Thread.currentThread().interrupt();
-        }
     }
 
 }

@@ -67,11 +67,6 @@ public class SPAUploadController {
         UUID processId = UUID.randomUUID();
         return new Pair<>(description, processId);
     }
-
-    @SneakyThrows
-    private void rateLimiter(int ms) {
-        Thread.sleep(ms);
-    }
 }
 
 

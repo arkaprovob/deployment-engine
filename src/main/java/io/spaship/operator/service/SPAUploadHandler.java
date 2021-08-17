@@ -44,7 +44,7 @@ public class SPAUploadHandler {
      * */
 
     public void handleFileUpload(Triplet<Path, UUID, String> input) {
-        LOG.debug("Deployment process initiated");
+        LOG.debug("     deployment process initiated with details {}",input);
 
         Uni.createFrom()
                 .item(() -> spaMappingIntoMemory(input))
@@ -54,7 +54,7 @@ public class SPAUploadHandler {
                 .subscribe()
                 .asCompletionStage()
                 .whenComplete((result, exception) -> {
-                    LOG.debug("operation completed");
+                    LOG.debug("     operation completed with details {}",input);
                     if (!Objects.isNull(exception))
                         LOG.error(exception.getMessage());
                     SharedRepository.dequeue(input.getValue2());
@@ -66,7 +66,6 @@ public class SPAUploadHandler {
         Path absoluteFilePath = input.getValue0();
         LOG.debug("absolute absoluteFilePath is {}", absoluteFilePath);
 
-        //ReUsableItems.blockFor(8000); //TODO remove this block
         File spaDistribution = new File(absoluteFilePath.toUri());
         String spaMappingReference = null;
         assert spaDistribution.exists();
@@ -91,7 +90,6 @@ public class SPAUploadHandler {
     }
 
     private Boolean createOrUpdateEnvironment(Pair<JsonObject, UUID> inputPair) {
-        //ReUsableItems.blockFor(8000); //TODO remove this block
         LOG.debug("offloading task to the operator");
         return k8soperator.createOrUpdateEnvironment(inputPair);
     }

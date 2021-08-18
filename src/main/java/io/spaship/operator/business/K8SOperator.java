@@ -4,6 +4,7 @@ import io.spaship.operator.repo.SharedRepository;
 import io.spaship.operator.util.ReUsableItems;
 import io.vertx.core.json.JsonObject;
 import org.javatuples.Pair;
+import org.javatuples.Triplet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,14 +17,30 @@ import java.util.UUID;
 public class K8SOperator {
     private static final Logger LOG = LoggerFactory.getLogger(K8SOperator.class);
 
-    public Boolean createOrUpdateEnvironment(Pair<JsonObject, UUID> inputPair) {
-        String websiteName = inputPair.getValue0().getString(
+    public Boolean createOrUpdateEnvironment(Triplet<JsonObject,UUID,String> inputParameters) {
+        String websiteName = inputParameters.getValue0().getString(
                 ReUsableItems.getSpaMappingWebsiteNameAttribute()
         );
-        enforceOpsLocking(new Pair<>(websiteName, inputPair.getValue1()));
+        enforceOpsLocking(new Pair<>(websiteName, inputParameters.getValue1()));
         ReUsableItems.blockFor(8000);
         return true;
     }
+
+
+
+    private boolean isPodExist(String website,UUID uuid) {
+        return false;
+    }
+
+    private Object createEnvironment(String website,UUID uuid){
+        return null;
+    }
+
+    private Object updateSpa(String path){
+        return null;
+    }
+
+
 
     private void enforceOpsLocking(Pair<String, UUID> blockDecisionFactors) {
         while (blockCall(blockDecisionFactors)) {

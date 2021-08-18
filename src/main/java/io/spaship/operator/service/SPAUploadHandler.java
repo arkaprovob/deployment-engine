@@ -62,7 +62,7 @@ public class SPAUploadHandler {
 
     }
 
-    private Pair<String, UUID> spaMappingIntoMemory(Triplet<Path, UUID, String> input) {
+    private Triplet<String, UUID,String> spaMappingIntoMemory(Triplet<Path, UUID, String> input) {
         Path absoluteFilePath = input.getValue0();
         LOG.debug("absolute absoluteFilePath is {}", absoluteFilePath);
 
@@ -80,18 +80,18 @@ public class SPAUploadHandler {
             e.printStackTrace();
         }
 
-        return new Pair<>(spaMappingReference, input.getValue1());
+        return new Triplet<>(spaMappingReference, input.getValue1(),input.getValue2());
     }
 
 
-    private Pair<JsonObject, UUID> stringToJson(Pair<String, UUID> pair) {
-        JsonObject spaMapping = new JsonObject(pair.getValue0());
-        return new Pair<>(spaMapping, pair.getValue1());
+    private Triplet<JsonObject,UUID,String> stringToJson(Triplet<String, UUID,String> input) {
+        JsonObject spaMapping = new JsonObject(input.getValue0());
+        return new Triplet<>(spaMapping, input.getValue1(),input.getValue2());
     }
 
-    private Boolean createOrUpdateEnvironment(Pair<JsonObject, UUID> inputPair) {
+    private Boolean createOrUpdateEnvironment(Triplet<JsonObject,UUID,String> inputParameters) {
         LOG.debug("offloading task to the operator");
-        return k8soperator.createOrUpdateEnvironment(inputPair);
+        return k8soperator.createOrUpdateEnvironment(inputParameters);
     }
 
 

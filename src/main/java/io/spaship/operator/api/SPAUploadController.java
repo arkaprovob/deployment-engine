@@ -43,6 +43,13 @@ public class SPAUploadController {
         return response.toString();
     }
 
+    @GET
+    @Path("/test-exception")
+    @Produces("application/json")
+    public String exception() {
+        throw new IllegalStateException("my custom illegal exception");
+    }
+
 
     @GET
     @Path("/dequeue/{website}")

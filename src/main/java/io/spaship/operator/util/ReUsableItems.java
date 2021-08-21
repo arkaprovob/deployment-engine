@@ -1,6 +1,5 @@
 package io.spaship.operator.util;
 
-import io.spaship.operator.business.k8s.Operator;
 import io.spaship.operator.repo.SharedRepository;
 import lombok.SneakyThrows;
 import org.javatuples.Pair;
@@ -28,19 +27,6 @@ public class ReUsableItems {
     public static String getSpashipMappingFileName() {
         return SPASHIP_MAPPING_FILE;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     //lock environment creation operation for same website

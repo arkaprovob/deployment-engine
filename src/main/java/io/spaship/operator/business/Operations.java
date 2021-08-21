@@ -7,9 +7,12 @@ import java.util.UUID;
 
 public interface Operations {
 
-    Boolean createOrUpdateEnvironment(Triplet<SpashipMapping, UUID,String> inputParameters);
-    boolean isEnvironmentExists(String website,UUID uuid);
-    Object createEnvironment(String website,UUID uuid);
+    Boolean createOrUpdateEnvironment(Triplet<SpashipMapping, UUID, String> inputParameters);
+
+    boolean isEnvironmentExists(String website, UUID uuid);
+
+    Object createEnvironment(String website, UUID uuid);
+
     Object updateSpa(String path);
 
 }

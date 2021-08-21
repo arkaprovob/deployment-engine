@@ -5,27 +5,9 @@ import io.vertx.core.json.JsonObject;
 import java.util.List;
 
 /**
-* This is a specialised class for retrieving the .spaship mapping
-* */
+ * This is a specialised class for retrieving the .spaship mapping
+ */
 public class SpashipMapping extends JsonObject {
-
-    SpashipMapping() {
-        super();
-    }
-
-    public SpashipMapping(String param){
-        super(param);
-        init();
-    }
-
-    void init(){
-        setWebsiteVersion();
-        setWebsiteName();
-        setEnvironments();
-        setName();
-        setExcludeFromEnvs();
-        setBranch();
-    }
 
     // we dont need any constant because we know the property name matches with incoming json attributes
     String websiteVersion;
@@ -35,6 +17,22 @@ public class SpashipMapping extends JsonObject {
     String name;
     List<String> excludeFromEnvs;
     String branch;
+    SpashipMapping() {
+        super();
+    }
+    public SpashipMapping(String param) {
+        super(param);
+        init();
+    }
+
+    void init() {
+        setWebsiteVersion();
+        setWebsiteName();
+        setEnvironments();
+        setName();
+        setExcludeFromEnvs();
+        setBranch();
+    }
 
     public String getWebsiteVersion() {
         return websiteVersion;

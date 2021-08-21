@@ -27,11 +27,11 @@ public class ExperimentalApi {
     @GET
     @Path("/pods/{value}")
     @Produces("text/plain")
-    public Uni<List<Pod>> listOfPods(@PathParam("value") String value){
-        List<Pod> pods= null;
+    public Uni<List<Pod>> listOfPods(@PathParam("value") String value) {
+        List<Pod> pods = null;
         try (KubernetesClient client = new DefaultOpenShiftClient()) {
 
-            var po = client.pods().inNamespace("spaship").withLabel("app.kubernetes.io/name",value);
+            var po = client.pods().inNamespace("spaship").withLabel("app.kubernetes.io/name", value);
             pods = po.list().getItems();
             po.delete();
             client.configMaps().inNamespace("").createOrReplace();

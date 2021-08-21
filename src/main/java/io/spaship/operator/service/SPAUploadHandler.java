@@ -43,7 +43,7 @@ public class SPAUploadHandler {
      * */
 
     public void handleFileUpload(Triplet<Path, UUID, String> input) {
-        LOG.debug("     deployment process initiated with details {}",input);
+        LOG.debug("     deployment process initiated with details {}", input);
 
         Uni.createFrom()
                 .item(() -> spaMappingIntoMemory(input))
@@ -53,7 +53,7 @@ public class SPAUploadHandler {
                 .subscribe()
                 .asCompletionStage()
                 .whenComplete((result, exception) -> {
-                    LOG.debug("     operation completed with details {}",input);
+                    LOG.debug("     operation completed with details {}", input);
                     if (!Objects.isNull(exception))
                         LOG.error(exception.getMessage());
                     SharedRepository.dequeue(input.getValue2());
@@ -61,7 +61,7 @@ public class SPAUploadHandler {
 
     }
 
-    private Triplet<String, UUID,String> spaMappingIntoMemory(Triplet<Path, UUID, String> input) {
+    private Triplet<String, UUID, String> spaMappingIntoMemory(Triplet<Path, UUID, String> input) {
         Path absoluteFilePath = input.getValue0();
         LOG.debug("absolute absoluteFilePath is {}", absoluteFilePath);
 
@@ -79,16 +79,16 @@ public class SPAUploadHandler {
             e.printStackTrace();
         }
 
-        return new Triplet<>(spaMappingReference, input.getValue1(),input.getValue2());
+        return new Triplet<>(spaMappingReference, input.getValue1(), input.getValue2());
     }
 
 
-    private Triplet<SpashipMapping,UUID,String> stringToSpashipMapping(Triplet<String, UUID,String> input) {
+    private Triplet<SpashipMapping, UUID, String> stringToSpashipMapping(Triplet<String, UUID, String> input) {
         SpashipMapping spaMapping = new SpashipMapping(input.getValue0());
-        return new Triplet<>(spaMapping, input.getValue1(),input.getValue2());
+        return new Triplet<>(spaMapping, input.getValue1(), input.getValue2());
     }
 
-    private Boolean createOrUpdateEnvironment(Triplet<SpashipMapping,UUID,String> inputParameters) {
+    private Boolean createOrUpdateEnvironment(Triplet<SpashipMapping, UUID, String> inputParameters) {
         LOG.debug("offloading task to the operator");
         return k8soperator.createOrUpdateEnvironment(inputParameters);
     }

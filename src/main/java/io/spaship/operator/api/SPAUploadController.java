@@ -1,16 +1,9 @@
 package io.spaship.operator.api;
 
 
-import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.KubernetesClientException;
-import io.fabric8.openshift.client.DefaultOpenShiftClient;
-import io.smallrye.mutiny.Uni;
 import io.spaship.operator.repo.SharedRepository;
 import io.spaship.operator.service.SPAUploadHandler;
 import io.spaship.operator.type.FormData;
-import lombok.SneakyThrows;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import org.jboss.resteasy.reactive.MultipartForm;
@@ -19,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
-import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 

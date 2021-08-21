@@ -2,12 +2,11 @@ package io.spaship.operator.service;
 
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
-import io.spaship.operator.business.K8SOperator;
+import io.spaship.operator.business.k8s.Operator;
 import io.spaship.operator.repo.SharedRepository;
+import io.spaship.operator.type.SpashipMapping;
 import io.spaship.operator.util.ReUsableItems;
-import io.vertx.core.json.JsonObject;
 import org.apache.commons.io.IOUtils;
-import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +30,9 @@ public class SPAUploadHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(SPAUploadHandler.class);
     private final Executor executor = Infrastructure.getDefaultExecutor();
-    private final K8SOperator k8soperator;
+    private final Operator k8soperator;
 
-    public SPAUploadHandler(K8SOperator k8soperator) {
+    public SPAUploadHandler(Operator k8soperator) {
         this.k8soperator = k8soperator;
     }
 
@@ -49,7 +48,7 @@ public class SPAUploadHandler {
         Uni.createFrom()
                 .item(() -> spaMappingIntoMemory(input))
                 .runSubscriptionOn(executor)
-                .map(this::stringToJson)
+                .map(this::stringToSpashipMapping)
                 .map(this::createOrUpdateEnvironment)
                 .subscribe()
                 .asCompletionStage()
@@ -84,12 +83,12 @@ public class SPAUploadHandler {
     }
 
 
-    private Triplet<JsonObject,UUID,String> stringToJson(Triplet<String, UUID,String> input) {
-        JsonObject spaMapping = new JsonObject(input.getValue0());
+    private Triplet<SpashipMapping,UUID,String> stringToSpashipMapping(Triplet<String, UUID,String> input) {
+        SpashipMapping spaMapping = new SpashipMapping(input.getValue0());
         return new Triplet<>(spaMapping, input.getValue1(),input.getValue2());
     }
 
-    private Boolean createOrUpdateEnvironment(Triplet<JsonObject,UUID,String> inputParameters) {
+    private Boolean createOrUpdateEnvironment(Triplet<SpashipMapping,UUID,String> inputParameters) {
         LOG.debug("offloading task to the operator");
         return k8soperator.createOrUpdateEnvironment(inputParameters);
     }

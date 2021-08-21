@@ -1,4 +1,4 @@
-package io.spaship.operator.exception;
+package io.spaship.operator.config;
 
 import io.spaship.operator.type.ErrorResponse;
 

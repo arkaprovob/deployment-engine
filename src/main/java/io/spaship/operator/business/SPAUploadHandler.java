@@ -1,26 +1,25 @@
-package io.spaship.operator.service;
+package io.spaship.operator.business;
 
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
-import io.spaship.operator.business.k8s.Operator;
+import io.spaship.operator.service.k8s.Operator;
 import io.spaship.operator.repo.SharedRepository;
 import io.spaship.operator.type.SpashipMapping;
 import io.spaship.operator.util.ReUsableItems;
 import org.apache.commons.io.IOUtils;
+import org.javatuples.Quartet;
 import org.javatuples.Triplet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Named;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -31,9 +30,12 @@ public class SPAUploadHandler {
     private static final Logger LOG = LoggerFactory.getLogger(SPAUploadHandler.class);
     private final Executor executor = Infrastructure.getDefaultExecutor();
     private final Operator k8soperator;
+    private final String nameSpace;
 
-    public SPAUploadHandler(Operator k8soperator) {
+
+    public SPAUploadHandler(Operator k8soperator,@Named("namespace") String nameSpace) {
         this.k8soperator = k8soperator;
+        this.nameSpace = nameSpace;
     }
 
     /*
@@ -83,14 +85,19 @@ public class SPAUploadHandler {
     }
 
 
-    private Triplet<SpashipMapping, UUID, String> stringToSpashipMapping(Triplet<String, UUID, String> input) {
+    private Quartet<SpashipMapping, UUID, String,String> stringToSpashipMapping(Triplet<String, UUID, String> input) {
         SpashipMapping spaMapping = new SpashipMapping(input.getValue0());
-        return new Triplet<>(spaMapping, input.getValue1(), input.getValue2());
+        return new Quartet<>(spaMapping, input.getValue1(), input.getValue2(),nameSpace);
     }
 
-    private Boolean createOrUpdateEnvironment(Triplet<SpashipMapping, UUID, String> inputParameters) {
+    private String createOrUpdateEnvironment(Quartet<SpashipMapping, UUID, String,String> inputParameters) {
         LOG.debug("offloading task to the operator");
-        return k8soperator.createOrUpdateEnvironment(inputParameters);
+        String websiteName = inputParameters.getValue0().getWebsiteName();
+        UUID  uuid = inputParameters.getValue1();
+        String environment = inputParameters.getValue2();
+        String ns = inputParameters.getValue3();
+        var input = new Quartet<>(websiteName,uuid,environment,ns);
+        return k8soperator.createOrUpdateEnvironment(input);
     }
 
 
@@ -110,5 +117,16 @@ public class SPAUploadHandler {
                     }
                 }).orElse(null);
     }
+
+
+/*    List<String> environments =  spaMapping.getEnvironments();
+    List<String> excludedEnvironments = spaMapping.getExcludeFromEnvs();
+        if(!excludedEnvironments.isEmpty())
+    deleteEnvironments(spaMapping,uuid,namespace);
+        environments.removeAll(excludedEnvironments);
+
+        environments.stream().map(env->{
+        return null;
+    }).collect(Collectors.toMap());*/
 
 }

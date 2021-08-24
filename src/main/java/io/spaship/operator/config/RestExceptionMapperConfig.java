@@ -8,7 +8,7 @@ import javax.ws.rs.ext.Provider;
 import java.util.Objects;
 
 @Provider
-public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
+public class RestExceptionMapperConfig implements ExceptionMapper<Throwable> {
     @Override
     public Response toResponse(Throwable throwable) {
         String errorMessage = Objects.isNull(throwable.getMessage()) ? throwable.toString() : throwable.getMessage();

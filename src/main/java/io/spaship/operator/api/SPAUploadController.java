@@ -35,8 +35,9 @@ public class SPAUploadController {
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public String uploadSPA(@MultipartForm FormData formData) {
+        //[0]description[1]unique-trace-id
         var response = sanity(formData);
-        //response.getValue1() is unique trace id of a spa deployment flow
+        //[0]file-path[1]unique-trace-id[2]website-name
         var fileUploadParams = new Triplet<>(formData.getfilePath(), response.getValue1(), formData.website);
         spaUploadHandlerService.handleFileUpload(fileUploadParams);
         return response.toString();

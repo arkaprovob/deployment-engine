@@ -2,10 +2,12 @@ package io.spaship.operator.business;
 
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
-import io.spaship.operator.service.k8s.Operator;
 import io.spaship.operator.repo.SharedRepository;
+import io.spaship.operator.service.k8s.Operator;
+import io.spaship.operator.type.Environment;
 import io.spaship.operator.type.SpashipMapping;
 import io.spaship.operator.util.ReUsableItems;
+import io.vertx.core.json.JsonObject;
 import org.apache.commons.io.IOUtils;
 import org.javatuples.Quartet;
 import org.javatuples.Triplet;
@@ -21,6 +23,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -33,25 +36,24 @@ public class SPAUploadHandler {
     private final String nameSpace;
 
 
-    public SPAUploadHandler(Operator k8soperator,@Named("namespace") String nameSpace) {
+    public SPAUploadHandler(Operator k8soperator, @Named("namespace") String nameSpace) {
         this.k8soperator = k8soperator;
         this.nameSpace = nameSpace;
     }
 
-    /*
-     * From Item build the file
-     * Next mapping extract the .spaship file
-     * Next POD,Configmaps,Service,Route,Ingress-Controller creation
-     * */
+    private static Environment createEnvironmentObject(JsonObject entries) {
+        return null;
+    }
 
+    //[0]file-store-path[1]ops-tracing-id[2]website-name
     public void handleFileUpload(Triplet<Path, UUID, String> input) {
         LOG.debug("     deployment process initiated with details {}", input);
 
         Uni.createFrom()
-                .item(() -> spaMappingIntoMemory(input))
+                .item(() -> spaMappingIntoMemory(input)) //input->[0]file-store-path[1]ops-tracing-id[2]website-name
                 .runSubscriptionOn(executor)
-                .map(this::stringToSpashipMapping)
-                .map(this::createOrUpdateEnvironment)
+                .map(this::buildEnvironmentList)//input->[0]SpashipMapping-object[1]ops-tracing-id[2]zipfile path
+                //.map(inputParameters -> createOrUpdateEnvironment(inputParameters))
                 .subscribe()
                 .asCompletionStage()
                 .whenComplete((result, exception) -> {
@@ -63,7 +65,7 @@ public class SPAUploadHandler {
 
     }
 
-    private Triplet<String, UUID, String> spaMappingIntoMemory(Triplet<Path, UUID, String> input) {
+    private Triplet<String, UUID, Path> spaMappingIntoMemory(Triplet<Path, UUID, String> input) {
         Path absoluteFilePath = input.getValue0();
         LOG.debug("absolute absoluteFilePath is {}", absoluteFilePath);
 
@@ -81,23 +83,54 @@ public class SPAUploadHandler {
             e.printStackTrace();
         }
 
-        return new Triplet<>(spaMappingReference, input.getValue1(), input.getValue2());
+        var output = new Triplet<>(spaMappingReference, input.getValue1(), input.getValue0());
+        LOG.debug("output of spaMappingIntoMemory  {} ", output);
+        return output;
     }
 
-
-    private Quartet<SpashipMapping, UUID, String,String> stringToSpashipMapping(Triplet<String, UUID, String> input) {
+    private List<Environment> buildEnvironmentList(Triplet<String, UUID, Path> input) {
         SpashipMapping spaMapping = new SpashipMapping(input.getValue0());
-        return new Quartet<>(spaMapping, input.getValue1(), input.getValue2(),nameSpace);
+
+        var environments = spaMapping.getEnvironments();
+        var environmentSize = environments.size();
+        LOG.debug("{} no of environments detected and first entry is {}", environmentSize, environments.get(0));
+
+        List<Environment> allEnvironments = environments.stream()
+                .map(environmentMapping -> {
+
+                    var envName = environmentMapping.getString("name");
+                    var websiteName = spaMapping.getString("websiteName");
+                    var traceID = input.getValue1();
+                    var updateRestriction = environmentMapping.getBoolean("updateRestriction");
+                    var zipFileLocation = input.getValue2();
+                    var websiteVersion = spaMapping.getWebsiteVersion();
+                    var spaName = spaMapping.getName();
+                    var spaContextPath = spaMapping.getContextPath();
+                    var branch = spaMapping.getBranch();
+                    var excludeFromEnvironment = environmentMapping.getBoolean("exclude");
+
+                    Environment environment = new Environment(envName, websiteName, traceID, this.nameSpace, updateRestriction, zipFileLocation,
+                            websiteVersion, spaName, spaContextPath, branch, excludeFromEnvironment);
+                    LOG.debug("Constructed environment object is {}", environment);
+                    return environment;
+
+                })
+                .collect(Collectors.toList());
+
+        assert environmentSize == allEnvironments.size();
+
+        return allEnvironments;
     }
 
-    private String createOrUpdateEnvironment(Quartet<SpashipMapping, UUID, String,String> inputParameters) {
+    //[2]environment[3]nameSpace
+    private String createOrUpdateEnvironment(Quartet<SpashipMapping, UUID, String, String> inputParameters) {
         LOG.debug("offloading task to the operator");
         String websiteName = inputParameters.getValue0().getWebsiteName();
-        UUID  uuid = inputParameters.getValue1();
+        UUID uuid = inputParameters.getValue1();
         String environment = inputParameters.getValue2();
         String ns = inputParameters.getValue3();
-        var input = new Quartet<>(websiteName,uuid,environment,ns);
-        return k8soperator.createOrUpdateEnvironment(input);
+        var input = new Quartet<>(websiteName, uuid, environment, ns);
+        return null;//k8soperator.createOrUpdateEnvironment(input);
     }
 
 
@@ -117,7 +150,6 @@ public class SPAUploadHandler {
                     }
                 }).orElse(null);
     }
-
 
 /*    List<String> environments =  spaMapping.getEnvironments();
     List<String> excludedEnvironments = spaMapping.getExcludeFromEnvs();

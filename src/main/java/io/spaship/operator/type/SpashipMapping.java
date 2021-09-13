@@ -12,14 +12,17 @@ public class SpashipMapping extends JsonObject {
     // we dont need any constant because we know the property name matches with incoming json attributes
     String websiteVersion;
     String websiteName;
-    List<String> environments;
+    List<JsonObject> environments;
     //Name of the SPA
     String name;
     List<String> excludeFromEnvs;
     String branch;
+    String contextPath;
+
     SpashipMapping() {
         super();
     }
+
     public SpashipMapping(String param) {
         super(param);
         init();
@@ -32,6 +35,7 @@ public class SpashipMapping extends JsonObject {
         setName();
         setExcludeFromEnvs();
         setBranch();
+        setContextPath();
     }
 
     public String getWebsiteVersion() {
@@ -50,7 +54,7 @@ public class SpashipMapping extends JsonObject {
         this.websiteName = this.getString("websiteName");
     }
 
-    public List<String> getEnvironments() {
+    public List<JsonObject> getEnvironments() {
         return environments;
     }
 
@@ -80,6 +84,14 @@ public class SpashipMapping extends JsonObject {
 
     public void setBranch() {
         this.branch = this.getString("branch");
+    }
+
+    public String getContextPath() {
+        return contextPath;
+    }
+
+    public void setContextPath() {
+        this.contextPath = this.getString("mapping");
     }
 
     @Override

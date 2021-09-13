@@ -7,9 +7,9 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.client.OpenShiftClient;
+import io.spaship.operator.exception.NotImplementedException;
 import io.spaship.operator.exception.ResourceNotFoundException;
 import io.spaship.operator.service.Operations;
-import io.spaship.operator.exception.NotImplementedException;
 import io.spaship.operator.util.ReUsableItems;
 import org.javatuples.Pair;
 import org.javatuples.Quartet;
@@ -18,7 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 
 @ApplicationScoped
@@ -34,59 +37,66 @@ public class Operator implements Operations {
 
     //website-name[0],uuid[1],environment[2],namespace[3],websiteVersion[4]
 
-    public String createOrUpdateEnvironment(Quintet<String, UUID, String,String,String> inputParameters) {
+    public String createOrUpdateEnvironment(Quintet<String, UUID, String, String, String> inputParameters) {
         String websiteName = inputParameters.getValue0();
         ReUsableItems.enforceOpsLocking(new Pair<>(websiteName, inputParameters.getValue1()));
-        ReUsableItems.blockFor(8000); //todo remove this, this is for ops simulation
-        boolean isEnvironmentExists = isEnvironmentExists(inputParameters).size()>0;
-        if(!isEnvironmentExists)
+        boolean isNewEnvironment = isEnvironmentExists(inputParameters).isEmpty();
+        LOG.debug("isNewEnvironment is {}", isNewEnvironment);
+        if (isNewEnvironment)
             createNewEnvironment(inputParameters);
         return environmentSidecarUrl(inputParameters);
     }
 
-    void createNewEnvironment(Quintet<String, UUID, String,String,String> inputParameters) {
+    void createNewEnvironment(Quintet<String, UUID, String, String, String> inputParameters) {
         Map<String, String> templateParameters = Map.of(
                 "WEBSITE", inputParameters.getValue0(),
-                "TRACE_ID",inputParameters.getValue1().toString(),
-                "ENV",inputParameters.getValue2(),
-                "WEBSITE_VERSION",inputParameters.getValue4());
-        var result = ((OpenShiftClient)k8sClient)
+                "TRACE_ID", inputParameters.getValue1().toString(),
+                "ENV", inputParameters.getValue2());
+        LOG.debug("templateParameters are as follows {}", templateParameters);
+        var result = ((OpenShiftClient) k8sClient)
                 .templates()
                 .inNamespace(inputParameters.getValue3())
                 .load(Operations.class.getResourceAsStream("/openshift/environment-template.yaml"))
                 .processLocally(templateParameters);
-        processK8sList(result,inputParameters.getValue1(),inputParameters.getValue3());
+        processK8sList(result, inputParameters.getValue1(), inputParameters.getValue3());
     }
 
-    private void processK8sList(KubernetesList result, UUID tracing,String nameSpace) {
+    private void processK8sList(KubernetesList result, UUID tracing, String nameSpace) {
 
-        result.getItems().forEach(item->{
-            if (item instanceof Service)
+        result.getItems().forEach(item -> {
+            if (item instanceof Service) {
+                LOG.debug("creating new Service in K8s, tracing = {}", tracing);
                 k8sClient.services().inNamespace(nameSpace).createOrReplace((Service) item);
-            if (item instanceof Deployment)
+            }
+            if (item instanceof Deployment) {
+                LOG.debug("creating new Deployment in K8s, tracing = {}", tracing);
                 k8sClient.apps().deployments().inNamespace(nameSpace).createOrReplace((Deployment) item);
-            if(item instanceof Route)
-                ((OpenShiftClient)k8sClient).routes().inNamespace(nameSpace).createOrReplace((Route) item);
-            LOG.debug("created resource in kubernetes, tracing = {}",tracing);
+            }
+            if (item instanceof Route) {
+                LOG.debug("creating new Route in K8s, tracing = {}", tracing);
+                ((OpenShiftClient) k8sClient).routes().inNamespace(nameSpace).createOrReplace((Route) item);
+            }
+            LOG.debug("created resource in kubernetes, tracing = {}", tracing);
         });
     }
 
 
-
-    List<Pod> isEnvironmentExists(Quintet<String, UUID, String,String,String> inputParameters){
-        Map<String, String> labels = searchCriteriaLabel(inputParameters.getValue0(),inputParameters.getValue2(),inputParameters.getValue4());
-        List<Pod> matchedPods = k8sClient.pods().inNamespace(inputParameters.getValue3()).withLabels(labels).list().getItems();
-        LOG.debug("{} no of matched pod found with search criteria {}",matchedPods.size(),labels);
+    List<Pod> isEnvironmentExists(Quintet<String, UUID, String, String, String> inputParameters) {
+        Map<String, String> labels = searchCriteriaLabel(inputParameters.getValue0(), inputParameters.getValue2(),
+                inputParameters.getValue4());
+        List<Pod> matchedPods = k8sClient.pods().inNamespace(inputParameters.getValue3()).withLabels(labels).list()
+                .getItems();
+        LOG.debug("{} no of matched pod found with search criteria {}", matchedPods.size(), labels);
         return matchedPods;
     }
 
 
-    void deleteEnvironment(Quartet<String, UUID, String,String> inputParameters) {
+    void deleteEnvironment(Quartet<String, UUID, String, String> inputParameters) {
         throw new NotImplementedException();
     }
 
 
-    String environmentSidecarUrl(Quintet<String, UUID, String,String,String> inputParameters){
+    String environmentSidecarUrl(Quintet<String, UUID, String, String, String> inputParameters) {
         String serviceName = "svc"
                 .concat("-")
                 .concat(inputParameters.getValue0().toLowerCase())
@@ -94,20 +104,20 @@ public class Operator implements Operations {
                 .concat(inputParameters.getValue2().toLowerCase())
                 .concat("-")
                 .concat(inputParameters.getValue4().toLowerCase());
-        LOG.debug("computed service name is {}",serviceName);
-        String url= k8sClient.services().inNamespace(inputParameters.getValue3())
+        LOG.debug("computed service name is {}", serviceName);
+        String url = k8sClient.services().inNamespace(inputParameters.getValue3())
                 .withName(serviceName).getURL("http");
-        if(Objects.isNull(url))
-            throw new ResourceNotFoundException("service:"+serviceName);
+        if (Objects.isNull(url))
+            throw new ResourceNotFoundException("service:" + serviceName);
         return url;
     }
 
 
-    Map<String, String> searchCriteriaLabel(String website,String environment,String websiteVersion) {
-        return  Map.of("managedBy", "spaship",
+    Map<String, String> searchCriteriaLabel(String website, String environment, String websiteVersion) {
+        return Map.of("managedBy", "spaship",
                 "website", website.toLowerCase(),
                 "environment", environment.toLowerCase(),
-                "websiteVersion",websiteVersion.toLowerCase()
-                );
+                "websiteVersion", websiteVersion.toLowerCase()
+        );
     }
 }

@@ -33,13 +33,12 @@ objects:
   - kind: Service
     apiVersion: v1
     metadata:
-      name: svc-${WEBSITE}-${ENV}-${WEBSITE_VERSION}
+      name: svc-${WEBSITE}-${ENV}
       labels:
         website: ${WEBSITE}
         managedBy: spaship
         environment: ${ENV}
         tracing: ${TRACE_ID}
-        websiteVersion: ${WEBSITE_VERSION}
     spec:
       #      type: NodePort
       ports:
@@ -54,25 +53,22 @@ objects:
         managedBy: spaship
         website: ${WEBSITE}
         environment: ${ENV}
-        websiteVersion: ${WEBSITE_VERSION}
   - kind: Deployment
     apiVersion: apps/v1
     metadata:
-      name: ${WEBSITE}-${ENV}-${WEBSITE_VERSION}
+      name: ${WEBSITE}-${ENV}
       website: ${WEBSITE}
       labels:
         website: ${WEBSITE}
         managedBy: spaship
         environment: ${ENV}
         tracing: ${TRACE_ID}
-        websiteVersion: ${WEBSITE_VERSION}
     spec:
       selector:
         matchLabels:
           managedBy: spaship
           website: ${WEBSITE}
           environment: ${ENV}
-          websiteVersion: ${WEBSITE_VERSION}
       replicas: 2
       template:
         metadata:
@@ -81,7 +77,6 @@ objects:
             managedBy: spaship
             environment: ${ENV}
             tracing: ${TRACE_ID}
-            websiteVersion: ${WEBSITE_VERSION}
         spec:
           containers:
             # Main container to serve data

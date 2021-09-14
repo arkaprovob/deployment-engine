@@ -42,16 +42,16 @@ public class ReUsableItems {
 
 
     static boolean blockCall(Pair<String, UUID> decisionFactors) {
-        String websiteName = decisionFactors.getValue0();
+        String environmentId = decisionFactors.getValue0();
         UUID traceId = decisionFactors.getValue1();
-        Pair<UUID, LocalDateTime> mapValue = SharedRepository.getEnvironmentLockMeta(websiteName);
+        Pair<UUID, LocalDateTime> mapValue = SharedRepository.getEnvironmentLockMeta(environmentId);
         if (Objects.isNull(mapValue)) {
             LOG.warn("environmentLock not found!");
             return false;
         }
         LOG.debug("comparing {} with {}", decisionFactors, mapValue);
 
-        return !SharedRepository.isQueued(websiteName)
+        return !SharedRepository.isQueued(environmentId)
                 || !mapValue.getValue0().equals(traceId);
     }
 }

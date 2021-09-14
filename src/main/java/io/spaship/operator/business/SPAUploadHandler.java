@@ -42,7 +42,7 @@ public class SPAUploadHandler {
         this.spaOperation = spaOperation;
         this.nameSpace = nameSpace;
     }
-    
+
 
     //[0]file-store-path[1]ops-tracing-id[2]website-name
     public void handleFileUpload(Triplet<Path, UUID, String> input) {
@@ -77,6 +77,9 @@ public class SPAUploadHandler {
 
                     return k8sOperator.createOrUpdateEnvironment(env);
                 })
+                .onFailure()
+                .retry()
+                .atMost(3)
                 .map(opsResponse -> {
                     if (opsResponse.getStatus() == -1 || opsResponse.getStatus() == 0) {
                         LOG.debug("no operation performed");
@@ -84,6 +87,19 @@ public class SPAUploadHandler {
                     }
 
                     return spaOperation.createOrUpdateSPDirectory(opsResponse);
+                })
+                .onFailure()
+                .retry()
+                .atMost(3)
+                .onFailure()
+                .recoverWithItem(throwable -> {
+                    return OperationResponse.builder().errorMessage(throwable.getLocalizedMessage()).build();
+                })
+                .subscribe()
+                .with(operationResponse -> {
+                    if (Objects.nonNull(operationResponse.getErrorMessage()))
+                        LOG.warn("ops failed {}", operationResponse.getErrorMessage());
+                    LOG.info("operation completed successfully with details {}", operationResponse);
                 });
 
     }

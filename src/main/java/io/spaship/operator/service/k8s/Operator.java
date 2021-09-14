@@ -37,6 +37,11 @@ public class Operator implements Operations {
 
 
     public OperationResponse createOrUpdateEnvironment(Environment environment) {
+
+        ReUsableItems.enforceOpsLocking(new Pair<>(environment.getIdentification(), environment.getTraceID()));
+        boolean isNewEnvironment = environmentExists(environment);
+        LOG.debug("isNewEnvironment is {}", isNewEnvironment);
+
         return null;
     }
 

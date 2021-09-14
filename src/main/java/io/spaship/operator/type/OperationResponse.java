@@ -46,6 +46,18 @@ public class OperationResponse {
         return this.originatedFrom;
     }
 
+    @Override
+    public String toString() {
+        return "{"
+                + "\"environment\":" + environment
+                + ", \"sideCarServiceUrl\":\"" + sideCarServiceUrl + "\""
+                + ", \"status\":\"" + status + "\""
+                + ", \"message\":\"" + message + "\""
+                + ", \"errorMessage\":\"" + errorMessage + "\""
+                + ", \"originatedFrom\":" + originatedFrom
+                + "}";
+    }
+
     public static class OperationResponseBuilder {
         private Environment environment;
         private String sideCarServiceUrl;
@@ -105,8 +117,16 @@ public class OperationResponse {
             return new OperationResponse(environment, sideCarServiceUrl, status, message, errorMessage, originatedFrom);
         }
 
+        @Override
         public String toString() {
-            return "OperationResponse.OperationResponseBuilder(environment=" + this.environment + ", sideCarServiceUrl=" + this.sideCarServiceUrl + ", status=" + this.status + ", message=" + this.message + ", errorMessage=" + this.errorMessage + ", originatedFrom=" + this.originatedFrom + ")";
+            return "{"
+                    + "\"environment\":" + environment
+                    + ", \"sideCarServiceUrl\":\"" + sideCarServiceUrl + "\""
+                    + ", \"status\":\"" + status + "\""
+                    + ", \"message\":\"" + message + "\""
+                    + ", \"errorMessage\":\"" + errorMessage + "\""
+                    + ", \"originatedFrom\":" + originatedFrom
+                    + "}";
         }
     }
 }

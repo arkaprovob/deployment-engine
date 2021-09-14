@@ -16,13 +16,13 @@ public class SharedRepository {
     }
 
 
-    public static boolean enqueue(String websiteName, Pair<UUID, LocalDateTime> meta) {
-        if (isQueued(websiteName)) {
-            LOG.debug("entry {} already exists", websiteName);
+    public static boolean enqueue(String environmentName, Pair<UUID, LocalDateTime> meta) {
+        if (isQueued(environmentName)) {
+            LOG.debug("entry {} already exists", environmentName);
             return false;
         }
-        LOG.debug("enqueuing the following details {} of website {}", meta, websiteName);
-        environmentLock.put(websiteName, meta);
+        LOG.debug("enqueuing the following details {} of website {}", meta, environmentName);
+        environmentLock.put(environmentName, meta);
         return true;
     }
 

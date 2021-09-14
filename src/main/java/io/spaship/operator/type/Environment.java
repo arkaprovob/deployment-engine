@@ -1,17 +1,8 @@
 package io.spaship.operator.type;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 import java.nio.file.Path;
 import java.util.UUID;
 
-@Setter
-@Getter
-@AllArgsConstructor
-@NoArgsConstructor
 public class Environment {
 
     String name;
@@ -26,6 +17,130 @@ public class Environment {
     String branch;
     boolean excludeFromEnvironment; //to create or not to create :P
     boolean operationPerformed = false; // for flagging purpose, to know whether any k8s operation is performed
+    String identification;
+
+
+    public Environment(String name, String websiteName, UUID traceID, String nameSpace, boolean updateRestriction,
+                       Path zipFileLocation, String websiteVersion, String spaName, String spaContextPath,
+                       String branch, boolean excludeFromEnvironment, boolean operationPerformed) {
+        this.name = name;
+        this.websiteName = websiteName;
+        this.traceID = traceID;
+        this.nameSpace = nameSpace;
+        this.updateRestriction = updateRestriction;
+        this.zipFileLocation = zipFileLocation;
+        this.websiteVersion = websiteVersion;
+        this.spaName = spaName;
+        this.spaContextPath = spaContextPath;
+        this.branch = branch;
+        this.excludeFromEnvironment = excludeFromEnvironment;
+        this.operationPerformed = operationPerformed;
+        this.identification = this.websiteName.concat("-").concat(name);
+    }
+
+    public String getName() {
+        return this.name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getWebsiteName() {
+        return this.websiteName;
+    }
+
+    public void setWebsiteName(String websiteName) {
+        this.websiteName = websiteName;
+    }
+
+    public UUID getTraceID() {
+        return this.traceID;
+    }
+
+    public void setTraceID(UUID traceID) {
+        this.traceID = traceID;
+    }
+
+    public String getNameSpace() {
+        return this.nameSpace;
+    }
+
+    public void setNameSpace(String nameSpace) {
+        this.nameSpace = nameSpace;
+    }
+
+    public boolean isUpdateRestriction() {
+        return this.updateRestriction;
+    }
+
+    public void setUpdateRestriction(boolean updateRestriction) {
+        this.updateRestriction = updateRestriction;
+    }
+
+    public Path getZipFileLocation() {
+        return this.zipFileLocation;
+    }
+
+    public void setZipFileLocation(Path zipFileLocation) {
+        this.zipFileLocation = zipFileLocation;
+    }
+
+    public String getWebsiteVersion() {
+        return this.websiteVersion;
+    }
+
+    public void setWebsiteVersion(String websiteVersion) {
+        this.websiteVersion = websiteVersion;
+    }
+
+    public String getSpaName() {
+        return this.spaName;
+    }
+
+    public void setSpaName(String spaName) {
+        this.spaName = spaName;
+    }
+
+    public String getSpaContextPath() {
+        return this.spaContextPath;
+    }
+
+    public void setSpaContextPath(String spaContextPath) {
+        this.spaContextPath = spaContextPath;
+    }
+
+    public String getBranch() {
+        return this.branch;
+    }
+
+    public void setBranch(String branch) {
+        this.branch = branch;
+    }
+
+    public boolean isExcludeFromEnvironment() {
+        return this.excludeFromEnvironment;
+    }
+
+    public void setExcludeFromEnvironment(boolean excludeFromEnvironment) {
+        this.excludeFromEnvironment = excludeFromEnvironment;
+    }
+
+    public boolean isOperationPerformed() {
+        return this.operationPerformed;
+    }
+
+    public void setOperationPerformed(boolean operationPerformed) {
+        this.operationPerformed = operationPerformed;
+    }
+
+    public String getIdentification() {
+        return this.identification;
+    }
+
+    public void setIdentification(String identification) {
+        this.identification = identification;
+    }
 
     @Override
     public String toString() {
@@ -42,8 +157,7 @@ public class Environment {
                 + ", \"branch\":\"" + branch + "\""
                 + ", \"excludeFromEnvironment\":\"" + excludeFromEnvironment + "\""
                 + ", \"operationPerformed\":\"" + operationPerformed + "\""
+                + ", \"identification\":\"" + identification + "\""
                 + "}";
     }
-
-
 }

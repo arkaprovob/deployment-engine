@@ -39,6 +39,7 @@ objects:
         managedBy: spaship
         environment: ${ENV}
         tracing: ${TRACE_ID}
+        websiteVersion: ${WEBSITE_VERSION}
     spec:
       #      type: NodePort
       ports:
@@ -53,6 +54,7 @@ objects:
         managedBy: spaship
         website: ${WEBSITE}
         environment: ${ENV}
+        websiteVersion: ${WEBSITE_VERSION}
   - kind: Deployment
     apiVersion: apps/v1
     metadata:
@@ -63,6 +65,7 @@ objects:
         managedBy: spaship
         environment: ${ENV}
         tracing: ${TRACE_ID}
+        websiteVersion: ${WEBSITE_VERSION}
     spec:
       selector:
         matchLabels:
@@ -77,6 +80,7 @@ objects:
             managedBy: spaship
             environment: ${ENV}
             tracing: ${TRACE_ID}
+            websiteVersion: ${WEBSITE_VERSION}
         spec:
           containers:
             # Main container to serve data

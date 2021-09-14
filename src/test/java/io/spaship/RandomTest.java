@@ -15,13 +15,13 @@ public class RandomTest {
         Multi.createFrom().items(1, 2, 3, 4, 5, 6, 7, 8, 9)
                 .onItem()
                 .invoke(item -> {
-                    System.out.println("per " + item);
+                    System.out.println("per " + item + " thread " + Thread.currentThread().getName());
                     item = item * 10;
                 }).map(item -> {
                     if (item == 5) {
                         //throw new RuntimeException("congratz its an error");
                     }
-
+                    System.out.println("second mapping chain, Thread " + Thread.currentThread().getName());
                     return item * 10;
                 }).onFailure()
                 .recoverWithItem(11)

@@ -25,6 +25,7 @@ public class Environment {
     String spaContextPath;
     String branch;
     boolean excludeFromEnvironment; //to create or not to create :P
+    boolean operationPerformed = false; // for flagging purpose, to know whether any k8s operation is performed
 
     @Override
     public String toString() {
@@ -40,6 +41,7 @@ public class Environment {
                 + ", \"spaContextPath\":\"" + spaContextPath + "\""
                 + ", \"branch\":\"" + branch + "\""
                 + ", \"excludeFromEnvironment\":\"" + excludeFromEnvironment + "\""
+                + ", \"operationPerformed\":\"" + operationPerformed + "\""
                 + "}";
     }
 

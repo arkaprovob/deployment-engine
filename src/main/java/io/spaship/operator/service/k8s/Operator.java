@@ -10,9 +10,10 @@ import io.fabric8.openshift.client.OpenShiftClient;
 import io.spaship.operator.exception.NotImplementedException;
 import io.spaship.operator.exception.ResourceNotFoundException;
 import io.spaship.operator.service.Operations;
+import io.spaship.operator.type.Environment;
+import io.spaship.operator.type.OperationResponse;
 import io.spaship.operator.util.ReUsableItems;
 import org.javatuples.Pair;
-import org.javatuples.Quartet;
 import org.javatuples.Quintet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,12 +36,16 @@ public class Operator implements Operations {
     }
 
 
+    public OperationResponse createOrUpdateEnvironment(Environment environment) {
+        return null;
+    }
+
     //website-name[0],uuid[1],environment[2],namespace[3],websiteVersion[4]
 
-    public String createOrUpdateEnvironment(Quintet<String, UUID, String, String, String> inputParameters) {
+    public String oldCreateOrUpdateEnvironment(Quintet<String, UUID, String, String, String> inputParameters) {
         String websiteName = inputParameters.getValue0();
         ReUsableItems.enforceOpsLocking(new Pair<>(websiteName, inputParameters.getValue1()));
-        boolean isNewEnvironment = isEnvironmentExists(inputParameters).isEmpty();
+        boolean isNewEnvironment = false;//isEnvironmentExists(inputParameters).isEmpty();
         LOG.debug("isNewEnvironment is {}", isNewEnvironment);
         if (isNewEnvironment)
             createNewEnvironment(inputParameters);
@@ -81,17 +86,24 @@ public class Operator implements Operations {
     }
 
 
-    List<Pod> isEnvironmentExists(Quintet<String, UUID, String, String, String> inputParameters) {
-        Map<String, String> labels = searchCriteriaLabel(inputParameters.getValue0(), inputParameters.getValue2(),
-                inputParameters.getValue4());
-        List<Pod> matchedPods = k8sClient.pods().inNamespace(inputParameters.getValue3()).withLabels(labels).list()
+    public List<Pod> isEnvironmentExists(Environment environment) {
+        Map<String, String> labels = searchCriteriaLabel(environment);
+        List<Pod> matchedPods = k8sClient.pods().inNamespace(environment.getNameSpace()).withLabels(labels).list()
                 .getItems();
         LOG.debug("{} no of matched pod found with search criteria {}", matchedPods.size(), labels);
         return matchedPods;
     }
 
+    public boolean environmentExists(Environment environment) {
+        Map<String, String> labels = searchCriteriaLabel(environment);
+        List<Pod> matchedPods = k8sClient.pods().inNamespace(environment.getNameSpace()).withLabels(labels).list()
+                .getItems();
+        LOG.debug("{} no of matched pod found with search criteria {}", matchedPods.size(), labels);
+        return !matchedPods.isEmpty();
+    }
 
-    void deleteEnvironment(Quartet<String, UUID, String, String> inputParameters) {
+
+    public OperationResponse deleteEnvironment(Environment environment) {
         throw new NotImplementedException();
     }
 
@@ -113,11 +125,11 @@ public class Operator implements Operations {
     }
 
 
-    Map<String, String> searchCriteriaLabel(String website, String environment, String websiteVersion) {
+    Map<String, String> searchCriteriaLabel(Environment environment) {
         return Map.of("managedBy", "spaship",
-                "website", website.toLowerCase(),
-                "environment", environment.toLowerCase(),
-                "websiteVersion", websiteVersion.toLowerCase()
+                "website", environment.getWebsiteName().toLowerCase(),
+                "environment", environment.getName().toLowerCase(),
+                "websiteVersion", environment.getWebsiteVersion().toLowerCase()
         );
     }
 }

@@ -1,15 +1,16 @@
 package io.spaship.operator.business;
 
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
-import io.spaship.operator.repo.SharedRepository;
 import io.spaship.operator.service.k8s.Operator;
+import io.spaship.operator.service.k8s.SPAOperation;
 import io.spaship.operator.type.Environment;
+import io.spaship.operator.type.OperationResponse;
 import io.spaship.operator.type.SpashipMapping;
 import io.spaship.operator.util.ReUsableItems;
 import io.vertx.core.json.JsonObject;
 import org.apache.commons.io.IOUtils;
-import org.javatuples.Quartet;
 import org.javatuples.Triplet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,35 +33,57 @@ public class SPAUploadHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(SPAUploadHandler.class);
     private final Executor executor = Infrastructure.getDefaultExecutor();
-    private final Operator k8soperator;
+    private final Operator k8sOperator;
+    private final SPAOperation spaOperation;
     private final String nameSpace;
 
-
-    public SPAUploadHandler(Operator k8soperator, @Named("namespace") String nameSpace) {
-        this.k8soperator = k8soperator;
+    public SPAUploadHandler(Operator k8sOperator, SPAOperation spaOperation, @Named("namespace") String nameSpace) {
+        this.k8sOperator = k8sOperator;
+        this.spaOperation = spaOperation;
         this.nameSpace = nameSpace;
     }
-
-    private static Environment createEnvironmentObject(JsonObject entries) {
-        return null;
-    }
+    
 
     //[0]file-store-path[1]ops-tracing-id[2]website-name
     public void handleFileUpload(Triplet<Path, UUID, String> input) {
         LOG.debug("     deployment process initiated with details {}", input);
 
         Uni.createFrom()
-                .item(() -> spaMappingIntoMemory(input)) //input->[0]file-store-path[1]ops-tracing-id[2]website-name
+                .item(() -> spaMappingIntoMemory(input))
                 .runSubscriptionOn(executor)
-                .map(this::buildEnvironmentList)//input->[0]SpashipMapping-object[1]ops-tracing-id[2]zipfile path
-                //.map(inputParameters -> createOrUpdateEnvironment(inputParameters))
-                .subscribe()
-                .asCompletionStage()
-                .whenComplete((result, exception) -> {
-                    LOG.debug("     operation completed with details {}", input);
-                    if (!Objects.isNull(exception))
-                        LOG.error(exception.getMessage());
-                    SharedRepository.dequeue(input.getValue2());
+                .map(this::buildEnvironmentList)
+                .onItem()
+                .transformToMulti(envList -> Multi.createFrom().iterable(envList))
+                .map(env -> {
+                    if (env.isUpdateRestriction() && k8sOperator.environmentExists(env)) {
+                        LOG.debug("environment exists but update restriction enforced, " +
+                                "environment details are as follows {}", env);
+                        return OperationResponse.builder().environment(env).status(-1).originatedFrom(this.getClass())
+                                .build();
+                    }
+
+                    if (env.isExcludeFromEnvironment() && k8sOperator.environmentExists(env)) {
+                        LOG.debug("environment exists but env exclusion enforced, " +
+                                "environment details are as follows {}", env);
+                        return k8sOperator.deleteEnvironment(env);
+                    }
+
+                    if (env.isExcludeFromEnvironment()) {
+                        LOG.debug("env exclusion enforced, skipping any operation, the environment details are as " +
+                                "follows {}", env);
+                        return OperationResponse.builder().environment(env).status(0).originatedFrom(this.getClass())
+                                .build();
+                    }
+
+                    return k8sOperator.createOrUpdateEnvironment(env);
+                })
+                .map(opsResponse -> {
+                    if (opsResponse.getStatus() == -1 || opsResponse.getStatus() == 0) {
+                        LOG.debug("no operation performed");
+                        return opsResponse;
+                    }
+
+                    return spaOperation.createOrUpdateSPDirectory(opsResponse);
                 });
 
     }
@@ -96,25 +119,7 @@ public class SPAUploadHandler {
         LOG.debug("{} no of environments detected and first entry is {}", environmentSize, environments.get(0));
 
         List<Environment> allEnvironments = environments.stream()
-                .map(environmentMapping -> {
-
-                    var envName = environmentMapping.getString("name");
-                    var websiteName = spaMapping.getString("websiteName");
-                    var traceID = input.getValue1();
-                    var updateRestriction = environmentMapping.getBoolean("updateRestriction");
-                    var zipFileLocation = input.getValue2();
-                    var websiteVersion = spaMapping.getWebsiteVersion();
-                    var spaName = spaMapping.getName();
-                    var spaContextPath = spaMapping.getContextPath();
-                    var branch = spaMapping.getBranch();
-                    var excludeFromEnvironment = environmentMapping.getBoolean("exclude");
-
-                    Environment environment = new Environment(envName, websiteName, traceID, this.nameSpace, updateRestriction, zipFileLocation,
-                            websiteVersion, spaName, spaContextPath, branch, excludeFromEnvironment);
-                    LOG.debug("Constructed environment object is {}", environment);
-                    return environment;
-
-                })
+                .map(environmentMapping -> constructEnvironmentObject(input, spaMapping, environmentMapping))
                 .collect(Collectors.toList());
 
         assert environmentSize == allEnvironments.size();
@@ -122,17 +127,8 @@ public class SPAUploadHandler {
         return allEnvironments;
     }
 
-    //[2]environment[3]nameSpace
-    private String createOrUpdateEnvironment(Quartet<SpashipMapping, UUID, String, String> inputParameters) {
-        LOG.debug("offloading task to the operator");
-        String websiteName = inputParameters.getValue0().getWebsiteName();
-        UUID uuid = inputParameters.getValue1();
-        String environment = inputParameters.getValue2();
-        String ns = inputParameters.getValue3();
-        var input = new Quartet<>(websiteName, uuid, environment, ns);
-        return null;//k8soperator.createOrUpdateEnvironment(input);
-    }
 
+//************************************************ Lambda inner Methods ************************************************
 
     private InputStream readFromSpaMapping(ZipFile zipFile, Enumeration<? extends ZipEntry> entries) {
         LOG.debug("reading from .spaship input stream");
@@ -151,14 +147,24 @@ public class SPAUploadHandler {
                 }).orElse(null);
     }
 
-/*    List<String> environments =  spaMapping.getEnvironments();
-    List<String> excludedEnvironments = spaMapping.getExcludeFromEnvs();
-        if(!excludedEnvironments.isEmpty())
-    deleteEnvironments(spaMapping,uuid,namespace);
-        environments.removeAll(excludedEnvironments);
+    private Environment constructEnvironmentObject(Triplet<String, UUID, Path> input, SpashipMapping spaMapping,
+                                                   JsonObject environmentMapping) {
+        var envName = environmentMapping.getString("name");
+        var websiteName = spaMapping.getString("websiteName");
+        var traceID = input.getValue1();
+        var updateRestriction = environmentMapping.getBoolean("updateRestriction");
+        var zipFileLocation = input.getValue2();
+        var websiteVersion = spaMapping.getWebsiteVersion();
+        var spaName = spaMapping.getName();
+        var spaContextPath = spaMapping.getContextPath();
+        var branch = spaMapping.getBranch();
+        var excludeFromEnvironment = environmentMapping.getBoolean("exclude");
 
-        environments.stream().map(env->{
-        return null;
-    }).collect(Collectors.toMap());*/
+        Environment environment = new Environment(envName, websiteName, traceID, this.nameSpace, updateRestriction,
+                zipFileLocation,
+                websiteVersion, spaName, spaContextPath, branch, excludeFromEnvironment, false);
+        LOG.debug("Constructed environment object is {}", environment);
+        return environment;
+    }
 
 }

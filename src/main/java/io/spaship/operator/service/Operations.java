@@ -1,13 +1,11 @@
 package io.spaship.operator.service;
 
-import org.javatuples.Quartet;
-import org.javatuples.Quintet;
-
-import java.util.UUID;
+import io.spaship.operator.type.Environment;
+import io.spaship.operator.type.OperationResponse;
 
 public interface Operations {
 
-    String createOrUpdateEnvironment(Quintet<String, UUID, String,String,String> inputParameters);
+    OperationResponse createOrUpdateEnvironment(Environment environment);
 
 
 }

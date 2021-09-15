@@ -81,19 +81,6 @@ public class Operator implements Operations {
 
     }
 
-    private OperationResponse applyDeleteResourceList(Environment environment, KubernetesList resourceList) {
-        LOG.debug("applying delete on resources");
-        boolean isDeleted = k8sClient.resourceList(resourceList).inNamespace(environment.getNameSpace()).delete();
-        environment.setOperationPerformed(true);
-        var or = OperationResponse.builder().environment(environment)
-                .sideCarServiceUrl("NA")
-                .originatedFrom(this.getClass());
-        or.status(3);
-        if (!isDeleted)
-            or.status(0).errorMessage("unable to delete the resources");
-        return or.build();
-    }
-
 
     void createNewEnvironment(Environment environment) {
         KubernetesList result = buildK8sResourceList(environment);
@@ -158,6 +145,19 @@ public class Operator implements Operations {
                 "environment", environment.getName().toLowerCase(),
                 "websiteVersion", environment.getWebsiteVersion().toLowerCase()
         );
+    }
+
+    private OperationResponse applyDeleteResourceList(Environment environment, KubernetesList resourceList) {
+        LOG.debug("applying delete on resources");
+        boolean isDeleted = k8sClient.resourceList(resourceList).inNamespace(environment.getNameSpace()).delete();
+        environment.setOperationPerformed(true);
+        var or = OperationResponse.builder().environment(environment)
+                .sideCarServiceUrl("NA")
+                .originatedFrom(this.getClass());
+        or.status(3);
+        if (!isDeleted)
+            or.status(0).errorMessage("unable to delete the resources");
+        return or.build();
     }
 
 

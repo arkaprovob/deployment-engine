@@ -88,6 +88,43 @@ public class Operator implements Operations {
         processK8sList(result, environment.getTraceID(), environment.getNameSpace());
     }
 
+    String environmentSidecarUrl(Environment environment) {
+        String serviceName = "svc"
+                .concat("-")
+                .concat(environment.getWebsiteName().toLowerCase())
+                .concat("-")
+                .concat(environment.getName().toLowerCase());
+        LOG.debug("computed service name is {}", serviceName);
+
+        return Optional.ofNullable(k8sClient.services().inNamespace(environment.getNameSpace()).withName(serviceName))
+                .map(svc -> svc.getURL("http-api"))
+                .orElseThrow(() -> {
+                    throw new ResourceNotFoundException("service:" + serviceName);
+                });
+    }
+
+    Map<String, String> searchCriteriaLabel(Environment environment) {
+        return Map.of("managedBy", "spaship",
+                "website", environment.getWebsiteName().toLowerCase(),
+                "environment", environment.getName().toLowerCase(),
+                "websiteVersion", environment.getWebsiteVersion().toLowerCase()
+        );
+    }
+
+    private OperationResponse applyDeleteResourceList(Environment environment, KubernetesList resourceList) {
+        LOG.debug("applying delete on resources");
+        boolean isDeleted = k8sClient.resourceList(resourceList).inNamespace(environment.getNameSpace()).delete();
+        environment.setOperationPerformed(true);
+        var or = OperationResponse.builder().environment(environment)
+                .sideCarServiceUrl("NA")
+                .originatedFrom(this.getClass());
+        or.status(3);
+        if (!isDeleted)
+            or.status(0).errorMessage("unable to delete the resources");
+        return or.build();
+    }
+
+
     private KubernetesList buildK8sResourceList(Environment environment) {
         Map<String, String> templateParameters = Map.of(
                 "WEBSITE", environment.getWebsiteName().toLowerCase(),
@@ -120,44 +157,6 @@ public class Operator implements Operations {
             }
             LOG.debug("created resource in kubernetes, tracing = {}", tracing);
         });
-    }
-
-    String environmentSidecarUrl(Environment environment) {
-        String serviceName = "svc"
-                .concat("-")
-                .concat(environment.getWebsiteName().toLowerCase())
-                .concat("-")
-                .concat(environment.getName().toLowerCase());
-        LOG.debug("computed service name is {}", serviceName);
-
-        return Optional.ofNullable(k8sClient.services().inNamespace(environment.getNameSpace()).withName(serviceName))
-                .map(svc -> {
-                    return svc.getURL("http-api");
-                })
-                .orElseThrow(() -> {
-                    throw new ResourceNotFoundException("service:" + serviceName);
-                });
-    }
-
-    Map<String, String> searchCriteriaLabel(Environment environment) {
-        return Map.of("managedBy", "spaship",
-                "website", environment.getWebsiteName().toLowerCase(),
-                "environment", environment.getName().toLowerCase(),
-                "websiteVersion", environment.getWebsiteVersion().toLowerCase()
-        );
-    }
-
-    private OperationResponse applyDeleteResourceList(Environment environment, KubernetesList resourceList) {
-        LOG.debug("applying delete on resources");
-        boolean isDeleted = k8sClient.resourceList(resourceList).inNamespace(environment.getNameSpace()).delete();
-        environment.setOperationPerformed(true);
-        var or = OperationResponse.builder().environment(environment)
-                .sideCarServiceUrl("NA")
-                .originatedFrom(this.getClass());
-        or.status(3);
-        if (!isDeleted)
-            or.status(0).errorMessage("unable to delete the resources");
-        return or.build();
     }
 
 

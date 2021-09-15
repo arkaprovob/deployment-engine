@@ -40,12 +40,16 @@ public class Operator implements Operations {
     public OperationResponse createOrUpdateEnvironment(Environment environment) {
 
         ReUsableItems.enforceOpsLocking(new Pair<>(environment.getIdentification(), environment.getTraceID()));
-        boolean isNewEnvironment = environmentExists(environment);
-        LOG.debug("isNewEnvironment is {}", isNewEnvironment);
-        if (!isNewEnvironment)
+
+        boolean envExists = environmentExists(environment);
+        LOG.debug("envExists is {}", envExists);
+        if (!envExists)
             createNewEnvironment(environment);
         String sideCarSvcUrl = environmentSidecarUrl(environment);
         environment.setOperationPerformed(true);
+
+        ReUsableItems.releaseLock(environment.getIdentification());
+        LOG.debug("\n");
         return OperationResponse.builder().environment(environment).sideCarServiceUrl(sideCarSvcUrl)
                 .originatedFrom(this.getClass()).status(1).build();
     }

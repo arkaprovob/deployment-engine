@@ -26,9 +26,9 @@ public class SharedRepository {
         return true;
     }
 
-    public static boolean dequeue(String websiteName) {
-        var value = environmentLock.remove(websiteName);
-        LOG.debug("dequeued the following details {} of website {}", value, websiteName);
+    public static boolean dequeue(String environmentName) {
+        var value = environmentLock.remove(environmentName);
+        LOG.debug("dequeued the following details {} of website {}", value, environmentName);
         return !Objects.isNull(value);
     }
 

@@ -40,6 +40,9 @@ public class ReUsableItems {
                 new Pair<>(blockDecisionFactors.getValue1(), LocalDateTime.now()));
     }
 
+    public static void releaseLock(String environmentName) {
+        SharedRepository.dequeue(environmentName);
+    }
 
     static boolean blockCall(Pair<String, UUID> decisionFactors) {
         String environmentId = decisionFactors.getValue0();

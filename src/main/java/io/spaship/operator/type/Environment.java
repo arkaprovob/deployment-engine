@@ -5,19 +5,19 @@ import java.util.UUID;
 
 public class Environment {
 
-    String name;
-    String websiteName;
-    UUID traceID;
-    String nameSpace;
-    boolean updateRestriction;
-    Path zipFileLocation;
-    String websiteVersion;
-    String spaName;
-    String spaContextPath;
-    String branch;
-    boolean excludeFromEnvironment; //to create or not to create :P
-    boolean operationPerformed = false; // for flagging purpose, to know whether any k8s operation is performed
-    String identification;
+    private String name;
+    private String websiteName;
+    private UUID traceID;
+    private String nameSpace;
+    private boolean updateRestriction;
+    private Path zipFileLocation;
+    private String websiteVersion;
+    private String spaName;
+    private String spaContextPath;
+    private String branch;
+    private boolean excludeFromEnvironment; //to create or not to create :P
+    private boolean operationPerformed = false; // for flagging purpose, to know whether any k8s operation is performed
+    private String identification;
 
 
     public Environment(String name, String websiteName, UUID traceID, String nameSpace, boolean updateRestriction,
@@ -35,7 +35,7 @@ public class Environment {
         this.branch = branch;
         this.excludeFromEnvironment = excludeFromEnvironment;
         this.operationPerformed = operationPerformed;
-        this.identification = this.websiteName.concat("-").concat(name);
+        this.identification = getWebsiteName().concat("-").concat(name);
     }
 
     public String getName() {
@@ -47,6 +47,8 @@ public class Environment {
     }
 
     public String getWebsiteName() {
+        this.websiteName = websiteName.replace(".", "-");
+        this.websiteName = websiteName.replace("_", "-");
         return this.websiteName;
     }
 

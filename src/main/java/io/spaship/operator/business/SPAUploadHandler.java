@@ -4,12 +4,11 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.spaship.operator.service.k8s.Operator;
-import io.spaship.operator.service.k8s.SPAOperation;
+import io.spaship.operator.service.k8s.SideCarOperations;
 import io.spaship.operator.type.Environment;
 import io.spaship.operator.type.OperationResponse;
 import io.spaship.operator.type.SpashipMapping;
 import io.spaship.operator.util.ReUsableItems;
-import io.vertx.core.json.JsonObject;
 import org.apache.commons.io.IOUtils;
 import org.javatuples.Triplet;
 import org.slf4j.Logger;
@@ -34,12 +33,12 @@ public class SPAUploadHandler {
     private static final Logger LOG = LoggerFactory.getLogger(SPAUploadHandler.class);
     private final Executor executor = Infrastructure.getDefaultExecutor();
     private final Operator k8sOperator;
-    private final SPAOperation spaOperation;
+    private final SideCarOperations sideCarOperations;
     private final String nameSpace;
 
-    public SPAUploadHandler(Operator k8sOperator, SPAOperation spaOperation, @Named("namespace") String nameSpace) {
+    public SPAUploadHandler(Operator k8sOperator, SideCarOperations sideCarOperations, @Named("namespace") String nameSpace) {
         this.k8sOperator = k8sOperator;
-        this.spaOperation = spaOperation;
+        this.sideCarOperations = sideCarOperations;
         this.nameSpace = nameSpace;
     }
 
@@ -77,29 +76,30 @@ public class SPAUploadHandler {
 
                     return k8sOperator.createOrUpdateEnvironment(env);
                 })
-                .onFailure()
-                .retry()
-                .atMost(3)
+                //.onFailure()
+                //.retry()
+                //.atMost(3)
                 .map(opsResponse -> {
                     if (opsResponse.getStatus() == -1 || opsResponse.getStatus() == 0) {
                         LOG.debug("no operation performed");
                         return opsResponse;
                     }
 
-                    return spaOperation.createOrUpdateSPDirectory(opsResponse);
+                    return sideCarOperations.createOrUpdateSPDirectory(opsResponse);
                 })
                 .onFailure()
-                .retry()
-                .atMost(3)
-                .onFailure()
                 .recoverWithItem(throwable -> {
+                    throwable.printStackTrace();
                     return OperationResponse.builder().errorMessage(throwable.getLocalizedMessage()).build();
                 })
                 .subscribe()
                 .with(operationResponse -> {
-                    if (Objects.nonNull(operationResponse.getErrorMessage()))
+                    if (Objects.nonNull(operationResponse.getErrorMessage())) {
                         LOG.warn("ops failed {}", operationResponse.getErrorMessage());
-                    LOG.info("operation completed successfully with details {}", operationResponse);
+                    } else {
+                        LOG.info("operation completed successfully with details {}", operationResponse);
+                    }
+
                 });
 
     }
@@ -164,17 +164,17 @@ public class SPAUploadHandler {
     }
 
     private Environment constructEnvironmentObject(Triplet<String, UUID, Path> input, SpashipMapping spaMapping,
-                                                   JsonObject environmentMapping) {
-        var envName = environmentMapping.getString("name");
+                                                   HashMap<String, Object> environmentMapping) {
+        var envName = environmentMapping.get("name").toString();
         var websiteName = spaMapping.getString("websiteName");
         var traceID = input.getValue1();
-        var updateRestriction = environmentMapping.getBoolean("updateRestriction");
+        var updateRestriction = (boolean) environmentMapping.get("updateRestriction");
         var zipFileLocation = input.getValue2();
         var websiteVersion = spaMapping.getWebsiteVersion();
         var spaName = spaMapping.getName();
         var spaContextPath = spaMapping.getContextPath();
         var branch = spaMapping.getBranch();
-        var excludeFromEnvironment = environmentMapping.getBoolean("exclude");
+        var excludeFromEnvironment = (boolean) environmentMapping.get("exclude");
 
         Environment environment = new Environment(envName, websiteName, traceID, this.nameSpace, updateRestriction,
                 zipFileLocation,

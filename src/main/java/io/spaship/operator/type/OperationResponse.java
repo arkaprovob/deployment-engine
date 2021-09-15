@@ -7,7 +7,7 @@ public class OperationResponse {
     int status; //[-1] : restricted, [0] : skipped, [1] : created, [2] : modified, [3] : deleted
     String message;
     String errorMessage;
-    Class originatedFrom;
+    Class<?> originatedFrom;
 
     OperationResponse(Environment environment, String sideCarServiceUrl, int status, String message, String errorMessage, Class originatedFrom) {
         this.environment = environment;
@@ -42,7 +42,7 @@ public class OperationResponse {
         return this.errorMessage;
     }
 
-    public Class getOriginatedFrom() {
+    public Class<?> getOriginatedFrom() {
         return this.originatedFrom;
     }
 
@@ -64,7 +64,7 @@ public class OperationResponse {
         private int status;
         private String message;
         private String errorMessage;
-        private Class originatedFrom;
+        private Class<?> originatedFrom;
 
         OperationResponseBuilder() {
         }
@@ -108,7 +108,7 @@ public class OperationResponse {
             return this;
         }
 
-        public OperationResponseBuilder originatedFrom(Class originatedFrom) {
+        public OperationResponseBuilder originatedFrom(Class<?> originatedFrom) {
             this.originatedFrom = originatedFrom;
             return this;
         }

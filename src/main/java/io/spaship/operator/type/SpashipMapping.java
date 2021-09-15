@@ -2,6 +2,7 @@ package io.spaship.operator.type;
 
 import io.vertx.core.json.JsonObject;
 
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -12,7 +13,7 @@ public class SpashipMapping extends JsonObject {
     // we dont need any constant because we know the property name matches with incoming json attributes
     String websiteVersion;
     String websiteName;
-    List<JsonObject> environments;
+    List<HashMap<String, Object>> environments;
     //Name of the SPA
     String name;
     List<String> excludeFromEnvs;
@@ -54,7 +55,7 @@ public class SpashipMapping extends JsonObject {
         this.websiteName = this.getString("websiteName");
     }
 
-    public List<JsonObject> getEnvironments() {
+    public List<HashMap<String, Object>> getEnvironments() {
         return environments;
     }
 

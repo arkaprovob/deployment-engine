@@ -72,7 +72,7 @@ objects:
           managedBy: spaship
           website: ${WEBSITE}
           environment: ${ENV}
-      replicas: 2
+      replicas: 1
       template:
         metadata:
           labels:
@@ -84,7 +84,7 @@ objects:
         spec:
           containers:
             # Main container to serve data
-            - name: httpd-spaship-operator
+            - name: httpd-server
               image: "${IMAGE_HTTPD}:${IMAGE_HTTPD_VERSION}"
               imagePullPolicy: IfNotPresent
               resources:
@@ -100,7 +100,7 @@ objects:
                 - mountPath: "/var/www/html/"
                   name: data
                   subpath: html
-            - name: api-spaship-operator
+            - name: sidecar
               image: "${IMAGE_API}:${IMAGE_API_VERSION}"
               imagePullPolicy: IfNotPresent     # Always / IfNotPresent
               livenessProbe:

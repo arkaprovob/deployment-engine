@@ -54,31 +54,6 @@ public class Operator implements Operations {
                 .originatedFrom(this.getClass()).status(1).build();
     }
 
-    void createNewEnvironment(Environment environment) {
-        KubernetesList result = buildK8sResourceList(environment);
-        LOG.debug("create environment is in progress");
-        processK8sList(result, environment.getTraceID(), environment.getNameSpace());
-    }
-
-
-    private void processK8sList(KubernetesList result, UUID tracing, String nameSpace) {
-
-        result.getItems().forEach(item -> {
-            if (item instanceof Service) {
-                LOG.debug("creating new Service in K8s, tracing = {}", tracing);
-                k8sClient.services().inNamespace(nameSpace).createOrReplace((Service) item);
-            }
-            if (item instanceof Deployment) {
-                LOG.debug("creating new Deployment in K8s, tracing = {}", tracing);
-                k8sClient.apps().deployments().inNamespace(nameSpace).createOrReplace((Deployment) item);
-            }
-            if (item instanceof Route) {
-                LOG.debug("creating new Route in K8s, tracing = {}", tracing);
-                ((OpenShiftClient) k8sClient).routes().inNamespace(nameSpace).createOrReplace((Route) item);
-            }
-            LOG.debug("created resource in kubernetes, tracing = {}", tracing);
-        });
-    }
 
     public boolean environmentExists(Environment environment) {
         Map<String, String> labels = searchCriteriaLabel(environment);
@@ -88,6 +63,9 @@ public class Operator implements Operations {
         return !matchedPods.isEmpty();
     }
 
+    public OperationResponse removeSPA(Environment env) {
+        throw new FeatureNotImplemented();
+    }
 
     public Uni<OperationResponse> deleteEnvironment(Environment environment) {
 
@@ -117,30 +95,10 @@ public class Operator implements Operations {
     }
 
 
-    String environmentSidecarUrl(Environment environment) {
-        String serviceName = "svc"
-                .concat("-")
-                .concat(environment.getWebsiteName().toLowerCase())
-                .concat("-")
-                .concat(environment.getName().toLowerCase());
-        LOG.debug("computed service name is {}", serviceName);
-
-        return Optional.ofNullable(k8sClient.services().inNamespace(environment.getNameSpace()).withName(serviceName))
-                .map(svc -> {
-                    return svc.getURL("http-api");
-                })
-                .orElseThrow(() -> {
-                    throw new ResourceNotFoundException("service:" + serviceName);
-                });
-    }
-
-
-    Map<String, String> searchCriteriaLabel(Environment environment) {
-        return Map.of("managedBy", "spaship",
-                "website", environment.getWebsiteName().toLowerCase(),
-                "environment", environment.getName().toLowerCase(),
-                "websiteVersion", environment.getWebsiteVersion().toLowerCase()
-        );
+    void createNewEnvironment(Environment environment) {
+        KubernetesList result = buildK8sResourceList(environment);
+        LOG.debug("create environment is in progress");
+        processK8sList(result, environment.getTraceID(), environment.getNameSpace());
     }
 
     private KubernetesList buildK8sResourceList(Environment environment) {
@@ -158,7 +116,49 @@ public class Operator implements Operations {
                 .processLocally(templateParameters);
     }
 
-    public OperationResponse removeSPA(Environment env) {
-        throw new FeatureNotImplemented();
+    private void processK8sList(KubernetesList result, UUID tracing, String nameSpace) {
+
+        result.getItems().forEach(item -> {
+            if (item instanceof Service) {
+                LOG.debug("creating new Service in K8s, tracing = {}", tracing);
+                k8sClient.services().inNamespace(nameSpace).createOrReplace((Service) item);
+            }
+            if (item instanceof Deployment) {
+                LOG.debug("creating new Deployment in K8s, tracing = {}", tracing);
+                k8sClient.apps().deployments().inNamespace(nameSpace).createOrReplace((Deployment) item);
+            }
+            if (item instanceof Route) {
+                LOG.debug("creating new Route in K8s, tracing = {}", tracing);
+                ((OpenShiftClient) k8sClient).routes().inNamespace(nameSpace).createOrReplace((Route) item);
+            }
+            LOG.debug("created resource in kubernetes, tracing = {}", tracing);
+        });
     }
+
+    String environmentSidecarUrl(Environment environment) {
+        String serviceName = "svc"
+                .concat("-")
+                .concat(environment.getWebsiteName().toLowerCase())
+                .concat("-")
+                .concat(environment.getName().toLowerCase());
+        LOG.debug("computed service name is {}", serviceName);
+
+        return Optional.ofNullable(k8sClient.services().inNamespace(environment.getNameSpace()).withName(serviceName))
+                .map(svc -> {
+                    return svc.getURL("http-api");
+                })
+                .orElseThrow(() -> {
+                    throw new ResourceNotFoundException("service:" + serviceName);
+                });
+    }
+
+    Map<String, String> searchCriteriaLabel(Environment environment) {
+        return Map.of("managedBy", "spaship",
+                "website", environment.getWebsiteName().toLowerCase(),
+                "environment", environment.getName().toLowerCase(),
+                "websiteVersion", environment.getWebsiteVersion().toLowerCase()
+        );
+    }
+
+
 }

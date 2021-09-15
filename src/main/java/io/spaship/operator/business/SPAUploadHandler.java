@@ -64,7 +64,7 @@ public class SPAUploadHandler {
                     if (env.isExcludeFromEnvironment() && k8sOperator.environmentExists(env)) {
                         LOG.debug("environment exists but env exclusion enforced, " +
                                 "environment details are as follows {}", env);
-                        return k8sOperator.deleteEnvironment(env);
+                        return k8sOperator.removeSPA(env);
                     }
 
                     if (env.isExcludeFromEnvironment()) {

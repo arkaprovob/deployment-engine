@@ -14,9 +14,9 @@ parameters:
   - name: "WEBSITE_VERSION"
     description: "Version of website"
     required: true
-  - name: "TRACE_ID"
-    description: "tracing UUID from operator during creation"
-    required: true
+  #  - name: "TRACE_ID"
+  #    description: "tracing UUID from operator during creation"
+  #    required: true
   - name: "IMAGE_HTTPD"
     value: "quay.io/spaship/httpd"
     required: false
@@ -38,7 +38,7 @@ objects:
         website: ${WEBSITE}
         managedBy: spaship
         environment: ${ENV}
-        tracing: ${TRACE_ID}
+        #tracing: ${TRACE_ID}
         websiteVersion: ${WEBSITE_VERSION}
     spec:
       #      type: NodePort
@@ -64,7 +64,7 @@ objects:
         website: ${WEBSITE}
         managedBy: spaship
         environment: ${ENV}
-        tracing: ${TRACE_ID}
+        #tracing: ${TRACE_ID}
         websiteVersion: ${WEBSITE_VERSION}
     spec:
       selector:
@@ -79,7 +79,7 @@ objects:
             website: ${WEBSITE}
             managedBy: spaship
             environment: ${ENV}
-            tracing: ${TRACE_ID}
+            #tracing: ${TRACE_ID}
             websiteVersion: ${WEBSITE_VERSION}
         spec:
           containers:

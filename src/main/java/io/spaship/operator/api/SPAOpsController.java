@@ -1,8 +1,8 @@
 package io.spaship.operator.api;
 
 
-import io.spaship.operator.repo.SharedRepository;
 import io.spaship.operator.business.SPAUploadHandler;
+import io.spaship.operator.repo.SharedRepository;
 import io.spaship.operator.type.FormData;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
@@ -16,12 +16,12 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Path("upload")
-public class SPAUploadController {
+public class SPAOpsController {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SPAUploadController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SPAOpsController.class);
     private final SPAUploadHandler spaUploadHandlerService;
 
-    public SPAUploadController(SPAUploadHandler spaUploadHandlerService) {
+    public SPAOpsController(SPAUploadHandler spaUploadHandlerService) {
         this.spaUploadHandlerService = spaUploadHandlerService;
     }
 

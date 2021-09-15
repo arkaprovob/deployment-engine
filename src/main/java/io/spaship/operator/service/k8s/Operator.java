@@ -7,6 +7,8 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.client.OpenShiftClient;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.spaship.operator.exception.FeatureNotImplemented;
 import io.spaship.operator.exception.ResourceNotFoundException;
 import io.spaship.operator.service.Operations;
@@ -43,28 +45,20 @@ public class Operator implements Operations {
         if (!isNewEnvironment)
             createNewEnvironment(environment);
         String sideCarSvcUrl = environmentSidecarUrl(environment);
+        environment.setOperationPerformed(true);
         return OperationResponse.builder().environment(environment).sideCarServiceUrl(sideCarSvcUrl)
                 .originatedFrom(this.getClass()).status(1).build();
     }
 
     void createNewEnvironment(Environment environment) {
-        Map<String, String> templateParameters = Map.of(
-                "WEBSITE", environment.getWebsiteName().toLowerCase(),
-                "TRACE_ID", environment.getTraceID().toString().toLowerCase(),
-                "ENV", environment.getName().toLowerCase(),
-                "WEBSITE_VERSION", environment.getWebsiteVersion().toLowerCase()
-        );
-        LOG.debug("create environment is in progress, templateParameters are as follows {}", templateParameters);
-        var result = ((OpenShiftClient) k8sClient)
-                .templates()
-                .inNamespace(environment.getNameSpace())
-                .load(Operations.class.getResourceAsStream("/openshift/environment-template.yaml"))
-                .processLocally(templateParameters);
+        KubernetesList result = buildK8sResourceList(environment);
+        LOG.debug("create environment is in progress");
         processK8sList(result, environment.getTraceID(), environment.getNameSpace());
     }
 
 
     private void processK8sList(KubernetesList result, UUID tracing, String nameSpace) {
+
         result.getItems().forEach(item -> {
             if (item instanceof Service) {
                 LOG.debug("creating new Service in K8s, tracing = {}", tracing);
@@ -91,8 +85,31 @@ public class Operator implements Operations {
     }
 
 
-    public OperationResponse deleteEnvironment(Environment environment) {
-        throw new FeatureNotImplemented("delete environment not implemented");
+    public Uni<OperationResponse> deleteEnvironment(Environment environment) {
+
+        return Uni.createFrom().item(buildK8sResourceList(environment))
+                .emitOn(Infrastructure.getDefaultExecutor())
+                .map(resourceList -> applyDeleteResourceList(environment, resourceList))
+                .onFailure()
+                .recoverWithItem(
+                        throwable -> OperationResponse.builder().environment(environment)
+                                .sideCarServiceUrl("NA").errorMessage(throwable.getMessage())
+                                .originatedFrom(this.getClass()).status(0).build()
+                );
+
+    }
+
+    private OperationResponse applyDeleteResourceList(Environment environment, KubernetesList resourceList) {
+        LOG.debug("applying delete on resources");
+        boolean isDeleted = k8sClient.resourceList(resourceList).inNamespace(environment.getNameSpace()).delete();
+        environment.setOperationPerformed(true);
+        var or = OperationResponse.builder().environment(environment)
+                .sideCarServiceUrl("NA")
+                .originatedFrom(this.getClass());
+        or.status(3);
+        if (!isDeleted)
+            or.status(0).errorMessage("unable to delete the resources");
+        return or.build();
     }
 
 
@@ -120,5 +137,24 @@ public class Operator implements Operations {
                 "environment", environment.getName().toLowerCase(),
                 "websiteVersion", environment.getWebsiteVersion().toLowerCase()
         );
+    }
+
+    private KubernetesList buildK8sResourceList(Environment environment) {
+        Map<String, String> templateParameters = Map.of(
+                "WEBSITE", environment.getWebsiteName().toLowerCase(),
+                //"TRACE_ID", environment.getTraceID().toString().toLowerCase(),
+                "ENV", environment.getName().toLowerCase(),
+                "WEBSITE_VERSION", environment.getWebsiteVersion().toLowerCase()
+        );
+        LOG.debug("building KubernetesList, templateParameters are as follows {}", templateParameters);
+        return ((OpenShiftClient) k8sClient)
+                .templates()
+                .inNamespace(environment.getNameSpace())
+                .load(Operations.class.getResourceAsStream("/openshift/environment-template.yaml"))
+                .processLocally(templateParameters);
+    }
+
+    public OperationResponse removeSPA(Environment env) {
+        throw new FeatureNotImplemented();
     }
 }

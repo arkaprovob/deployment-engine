@@ -16,12 +16,12 @@ import java.util.Objects;
 import java.util.UUID;
 
 @Path("upload")
-public class SPAOpsController {
+public class SpaDeploymentController {
 
-    private static final Logger LOG = LoggerFactory.getLogger(SPAOpsController.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SpaDeploymentController.class);
     private final SPAUploadHandler spaUploadHandlerService;
 
-    public SPAOpsController(SPAUploadHandler spaUploadHandlerService) {
+    public SpaDeploymentController(SPAUploadHandler spaUploadHandlerService) {
         this.spaUploadHandlerService = spaUploadHandlerService;
     }
 

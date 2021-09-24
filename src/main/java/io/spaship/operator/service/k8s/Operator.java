@@ -51,7 +51,7 @@ public class Operator implements Operations {
         ReUsableItems.releaseLock(environment.getIdentification());
         LOG.debug("\n");
         return OperationResponse.builder().environment(environment).sideCarServiceUrl(sideCarSvcUrl)
-                .originatedFrom(this.getClass()).status(1).build();
+                .originatedFrom(this.getClass().toString()).status(1).build();
     }
 
 
@@ -76,7 +76,7 @@ public class Operator implements Operations {
                 .recoverWithItem(
                         throwable -> OperationResponse.builder().environment(environment)
                                 .sideCarServiceUrl("NA").errorMessage(throwable.getMessage())
-                                .originatedFrom(this.getClass()).status(0).build()
+                                .originatedFrom(this.getClass().toString()).status(0).build()
                 );
 
     }
@@ -117,7 +117,7 @@ public class Operator implements Operations {
         environment.setOperationPerformed(true);
         var or = OperationResponse.builder().environment(environment)
                 .sideCarServiceUrl("NA")
-                .originatedFrom(this.getClass());
+                .originatedFrom(this.getClass().toString());
         or.status(3);
         if (!isDeleted)
             or.status(0).errorMessage("unable to delete the resources");

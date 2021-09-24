@@ -1,5 +1,9 @@
 package io.spaship.operator.type;
 
+import java.nio.file.Path;
+import java.util.Objects;
+import java.util.UUID;
+
 public class OperationResponse {
 
     Environment environment;
@@ -7,9 +11,9 @@ public class OperationResponse {
     int status; //[-1] : restricted, [0] : skipped, [1] : created, [2] : modified, [3] : deleted
     String message;
     String errorMessage;
-    Class<?> originatedFrom;
+    String originatedFrom;
 
-    OperationResponse(Environment environment, String sideCarServiceUrl, int status, String message, String errorMessage, Class originatedFrom) {
+    OperationResponse(Environment environment, String sideCarServiceUrl, int status, String message, String errorMessage, String originatedFrom) {
         this.environment = environment;
         this.sideCarServiceUrl = sideCarServiceUrl;
         this.status = status;
@@ -42,7 +46,7 @@ public class OperationResponse {
         return this.errorMessage;
     }
 
-    public Class<?> getOriginatedFrom() {
+    public String getOriginatedFrom() {
         return this.originatedFrom;
     }
 
@@ -58,13 +62,31 @@ public class OperationResponse {
                 + "}";
     }
 
+    public Path filePath() {
+        Objects.requireNonNull(environment, "environment object is null");
+        Objects.requireNonNull(environment.getZipFileLocation(), "zip file location not found");
+        return environment.getZipFileLocation();
+    }
+
+    public UUID traceId() {
+        Objects.requireNonNull(environment, "environment object is null");
+        Objects.requireNonNull(environment.getTraceID(), "trace-id not found");
+        return environment.getTraceID();
+    }
+
+    public String spaName() {
+        Objects.requireNonNull(environment, "environment object is null");
+        Objects.requireNonNull(environment.getSpaName(), "SPA name not found");
+        return environment.getSpaName();
+    }
+
     public static class OperationResponseBuilder {
         private Environment environment;
         private String sideCarServiceUrl;
         private int status;
         private String message;
         private String errorMessage;
-        private Class<?> originatedFrom;
+        private String originatedFrom;
 
         OperationResponseBuilder() {
         }
@@ -108,7 +130,7 @@ public class OperationResponse {
             return this;
         }
 
-        public OperationResponseBuilder originatedFrom(Class<?> originatedFrom) {
+        public OperationResponseBuilder originatedFrom(String originatedFrom) {
             this.originatedFrom = originatedFrom;
             return this;
         }
@@ -116,6 +138,7 @@ public class OperationResponse {
         public OperationResponse build() {
             return new OperationResponse(environment, sideCarServiceUrl, status, message, errorMessage, originatedFrom);
         }
+
 
         @Override
         public String toString() {

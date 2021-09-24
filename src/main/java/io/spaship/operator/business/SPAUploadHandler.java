@@ -57,7 +57,7 @@ public class SPAUploadHandler {
                     if (env.isUpdateRestriction() && k8sOperator.environmentExists(env)) {
                         LOG.debug("environment exists but update restriction enforced, " +
                                 "environment details are as follows {}", env);
-                        return OperationResponse.builder().environment(env).status(-1).originatedFrom(this.getClass())
+                        return OperationResponse.builder().environment(env).status(-1).originatedFrom(this.getClass().toString())
                                 .build();
                     }
 
@@ -70,7 +70,7 @@ public class SPAUploadHandler {
                     if (env.isExcludeFromEnvironment()) {
                         LOG.debug("env exclusion enforced, skipping any operation, the environment details are as " +
                                 "follows {}", env);
-                        return OperationResponse.builder().environment(env).status(0).originatedFrom(this.getClass())
+                        return OperationResponse.builder().environment(env).status(0).originatedFrom(this.getClass().toString())
                                 .build();
                     }
 

@@ -1,5 +1,6 @@
 package io.spaship.operator.service.k8s;
 
+import io.fabric8.kubernetes.api.model.ConfigMap;
 import io.fabric8.kubernetes.api.model.KubernetesList;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Service;
@@ -154,6 +155,10 @@ public class Operator implements Operations {
             if (item instanceof Route) {
                 LOG.debug("creating new Route in K8s, tracing = {}", tracing);
                 ((OpenShiftClient) k8sClient).routes().inNamespace(nameSpace).createOrReplace((Route) item);
+            }
+            if (item instanceof ConfigMap) {
+                LOG.debug("creating new ConfigMap in K8s, tracing = {}", tracing);
+                k8sClient.configMaps().inNamespace(nameSpace).createOrReplace((ConfigMap) item);
             }
             LOG.debug("created resource in kubernetes, tracing = {}", tracing);
         });

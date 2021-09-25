@@ -3,6 +3,8 @@ package io.spaship.operator.service.k8s;
 import io.spaship.operator.type.OperationResponse;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 import io.vertx.mutiny.ext.web.multipart.MultipartForm;
 import lombok.SneakyThrows;
@@ -10,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
+import java.util.Objects;
 
 @ApplicationScoped
 public class SideCarOperations {
@@ -32,18 +35,31 @@ public class SideCarOperations {
         environment.setOperationPerformed(true);
 
         MultipartForm form = MultipartForm.create()
-                .textFileUpload("spa", operationResponse.spaName(), operationResponse.filePath().toAbsolutePath().toString(), "application/zip");
+                .textFileUpload("spa", operationResponse.spaName(), operationResponse.filePath().toAbsolutePath()
+                        .toString(), "application/zip"
+                );
+
+        var responseOnFailure = OperationResponse.builder().environment(environment)
+                .sideCarServiceUrl(operationResponse.getSideCarServiceUrl()).status(0)
+                .originatedFrom(this.getClass().toString());
 
         return client.post("localhost").port(8081).uri("/api/upload").sendMultipartForm(form)
-                .map(item -> {
+                .map(item -> apply(responseOnFailure, item))
+                .onFailure().recoverWithItem(e -> responseOnFailure.errorMessage(e.getMessage()).build())
+                .subscribeAsCompletionStage()
+                .get();
+    }
 
-                    LOG.debug("status code {} and status message {}", item.statusCode(), item.statusMessage());
-                    OperationResponse response = item.bodyAsJson(OperationResponse.class);
-                    LOG.debug("response is {}", response);
-                    return response;
-                })
-                .onFailure().recoverWithItem(e -> OperationResponse.builder().environment(environment).sideCarServiceUrl(operationResponse.getSideCarServiceUrl()).status(0).originatedFrom(this.getClass().toString()).errorMessage(e.getMessage()).build())
-                .subscribeAsCompletionStage().get();
+    private OperationResponse apply(OperationResponse.OperationResponseBuilder responseOnFailure,
+                                    HttpResponse<Buffer> item) {
+        var responseFromSidecar = item.bodyAsJson(OperationResponse.class);
+        if (Objects.isNull(responseFromSidecar))
+            return responseOnFailure.errorMessage("status code: "
+                    .concat(Integer.toString(item.statusCode()))
+                    .concat(" message: ")
+                    .concat(item.statusMessage())).build();
+        LOG.debug("sidecar response if  {}", responseFromSidecar);
+        return responseFromSidecar;
     }
 
 

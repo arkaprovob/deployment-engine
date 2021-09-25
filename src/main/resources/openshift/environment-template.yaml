@@ -21,15 +21,31 @@ parameters:
     value: "quay.io/spaship/httpd"
     required: false
   - name: "IMAGE_API"
-    value: "quay.io/spaship/content-git-api"
+    value: "quay.io/arbhatta/sidecar"
     required: false
   - name: "IMAGE_HTTPD_VERSION"
     value: "1.3.6"
     required: false
   - name: "IMAGE_API_VERSION"
-    value: "1.3.6"
+    value: "master"
     required: false
 objects:
+  - kind: ConfigMap
+    apiVersion: v1
+    metadata:
+      name: sidecar-config
+      labels:
+        website: ${WEBSITE}
+        managedBy: spaship
+        environment: ${ENV}
+        websiteVersion: ${WEBSITE_VERSION}
+    data:
+      SIDECAR_SPADIR: "/app/data"
+      SIDECAR_WEBSITENAME: ${WEBSITE}
+      SIDECAR_ENVIRONMENTNAME: ${ENV}
+      SIDECAR_WEBSITE_VERSION: ${WEBSITE_VERSION}
+      SPASHIP_MAPPING_FILE: ".spaship"
+
   - kind: Service
     apiVersion: v1
     metadata:
@@ -48,7 +64,8 @@ objects:
           targetPort: 8080
           name: http
         # Expose rest api
-        - port: 8090
+        - port: 8081
+          targetPort: 8081
           name: http-api
       selector:
         managedBy: spaship
@@ -102,18 +119,18 @@ objects:
                   subpath: html
             - name: sidecar
               image: "${IMAGE_API}:${IMAGE_API_VERSION}"
-              imagePullPolicy: IfNotPresent     # Always / IfNotPresent
+              imagePullPolicy: Always     # Always / IfNotPresent
               livenessProbe:
                 httpGet:
-                  path: "/"
-                  port: 8090
+                  path: "/api/upload"
+                  port: 8081
                 initialDelaySeconds: 2
                 failureThreshold: 10
                 periodSeconds: 10
               readinessProbe:
                 httpGet:
-                  path: "/"
-                  port: 8090
+                  path: "/api/upload"
+                  port: 8081
                 initialDelaySeconds: 2
                 failureThreshold: 5
                 periodSeconds: 10
@@ -125,7 +142,7 @@ objects:
                   cpu: 100m
                   memory: 100Mi
               ports:
-                - containerPort: 8090
+                - containerPort: 8081
               env:
                 - name: APP_DATA_DIR
                   value: "/app/data/"
@@ -133,6 +150,10 @@ objects:
                 - mountPath: "/app/data/"
                   name: data
                   subpath: data
+              envFrom:
+                - configMapRef:
+                    name: sidecar-config
+
           volumes:
             - name: data
               emptyDir: { }

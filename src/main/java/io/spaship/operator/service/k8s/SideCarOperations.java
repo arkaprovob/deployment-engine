@@ -30,6 +30,7 @@ public class SideCarOperations {
     }
 
     @SneakyThrows
+    //TODO break into multiple methods
     public OperationResponse createOrUpdateSPDirectory(OperationResponse operationResponse) {
         var sideCarUrl = operationResponse.getSideCarServiceUrl().replace("tcp", "http");
         var environment = operationResponse.getEnvironment();
@@ -50,7 +51,8 @@ public class SideCarOperations {
 
         var opResp = client.post(host).port(port).uri("/api/upload").sendMultipartForm(form)
                 .map(item -> apply(responseOnFailure, item))
-                .onFailure().recoverWithItem(e -> responseOnFailure.errorMessage(e.getMessage()).build())
+                .onFailure()
+                .recoverWithItem(e -> responseOnFailure.errorMessage(e.getMessage()).build())
                 .subscribeAsCompletionStage()
                 .get();
 

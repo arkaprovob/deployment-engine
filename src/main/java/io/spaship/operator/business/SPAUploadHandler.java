@@ -49,6 +49,7 @@ public class SPAUploadHandler {
 
 
     //[0]file-store-path[1]ops-tracing-id[2]website-name
+    //TODO : simplify map blocks
     public void handleFileUpload(Triplet<Path, UUID, String> input) {
         LOG.debug("     deployment process initiated with details {}", input);
 

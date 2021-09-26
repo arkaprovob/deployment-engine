@@ -1,6 +1,7 @@
 package io.spaship.operator.business;
 
 import io.spaship.operator.type.EventStructure;
+import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.slf4j.Logger;
@@ -22,7 +23,8 @@ public class EventManager {
     }
 
     public void queue(EventStructure event) {
-        vertx.eventBus().publish(busAddress, event);
+        JsonObject messageBody = JsonObject.mapFrom(event);
+        vertx.eventBus().publish(busAddress, messageBody);
         LOG.debug("event scheduled");
     }
 

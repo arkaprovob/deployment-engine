@@ -145,6 +145,7 @@ public class Operator implements Operations {
                 .processLocally(templateParameters);
     }
 
+    //TODO remove if blocks
     private void processK8sList(KubernetesList result, UUID tracing, String nameSpace) {
 
         var eb = EventStructure.builder().uuid(tracing);
@@ -154,34 +155,34 @@ public class Operator implements Operations {
                 LOG.debug("creating new Service in K8s, tracing = {}", tracing);
                 k8sClient.services().inNamespace(nameSpace).createOrReplace((Service) item);
                 eb.websiteName(item.getMetadata().getLabels().get("website"))
-                        .websiteName(item.getMetadata().getLabels().get("environment"))
+                        .environmentName(item.getMetadata().getLabels().get("environment"))
                         .state("service created");
             }
             if (item instanceof Deployment) {
                 LOG.debug("creating new Deployment in K8s, tracing = {}", tracing);
                 k8sClient.apps().deployments().inNamespace(nameSpace).createOrReplace((Deployment) item);
                 eb.websiteName(item.getMetadata().getLabels().get("website"))
-                        .websiteName(item.getMetadata().getLabels().get("environment"))
+                        .environmentName(item.getMetadata().getLabels().get("environment"))
                         .state("deployment created");
             }
             if (item instanceof Route) {
                 LOG.debug("creating new Route in K8s, tracing = {}", tracing);
                 ((OpenShiftClient) k8sClient).routes().inNamespace(nameSpace).createOrReplace((Route) item);
                 eb.websiteName(item.getMetadata().getLabels().get("website"))
-                        .websiteName(item.getMetadata().getLabels().get("environment"))
+                        .environmentName(item.getMetadata().getLabels().get("environment"))
                         .state("route created");
             }
             if (item instanceof ConfigMap) {
                 LOG.debug("creating new ConfigMap in K8s, tracing = {}", tracing);
                 k8sClient.configMaps().inNamespace(nameSpace).createOrReplace((ConfigMap) item);
                 eb.websiteName(item.getMetadata().getLabels().get("website"))
-                        .websiteName(item.getMetadata().getLabels().get("environment"))
+                        .environmentName(item.getMetadata().getLabels().get("environment"))
                         .state("configmap created");
             }
-            LOG.debug("created resource in kubernetes, tracing = {}", tracing);
+            eventManager.queue(eb.build());
         });
 
-        eventManager.queue(eb.build());
+
     }
 
 

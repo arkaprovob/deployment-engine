@@ -2,9 +2,6 @@ package io.spaship.operator.service;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.apache.commons.io.IOUtils;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,11 +24,11 @@ class SPAUploadHandlerTest {
     private static final Logger LOG = LoggerFactory.getLogger(SPAUploadHandlerTest.class);
     String absolutePathOfTestFile = "/home/arkaprovo/IdeaProjects/spa-deployment-operator/src/test/resources/large-dir.zip";
 
-    @BeforeEach
+    //@BeforeEach
     void setUp() {
     }
 
-    @AfterEach
+    //@AfterEach
     void tearDown() {
     }
 
@@ -109,13 +106,13 @@ class SPAUploadHandlerTest {
 
     }
 
-    @Test
+    //@Test
     void readZipFileOne() throws URISyntaxException, IOException {
         pathToFileWayOne();
         assert true == true;
     }
 
-    @Test
+    //@Test
     void readZipFileTwo() throws URISyntaxException, IOException {
         pathToFileWayTwo();
         assert true == true;

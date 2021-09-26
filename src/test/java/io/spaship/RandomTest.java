@@ -39,4 +39,17 @@ public class RandomTest {
     }
 
 
+    @Test
+    public void testSplit() {
+
+        String url = "http://172.30.48.16:8081";
+        String[] urlsPart = url.split(":");
+        System.out.println(urlsPart[0]);
+        System.out.println(urlsPart[1].replace("//", ""));
+        System.out.println(urlsPart[2]);
+        assert urlsPart.length == 3;
+
+
+    }
+
 }

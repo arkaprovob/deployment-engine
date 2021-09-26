@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -87,6 +88,10 @@ public class SPAUploadHandler {
 
                     return sideCarOperations.createOrUpdateSPDirectory(opsResponse);
                 })
+                .onFailure()
+                .retry()
+                .withBackOff(Duration.ofSeconds(5), Duration.ofSeconds(10))
+                .atMost(6)
                 .onFailure()
                 .recoverWithItem(throwable -> {
                     throwable.printStackTrace();

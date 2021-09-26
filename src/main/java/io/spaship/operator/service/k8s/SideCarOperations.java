@@ -33,7 +33,10 @@ public class SideCarOperations {
         var environment = operationResponse.getEnvironment();
         LOG.info("sidecar url {} invoked with the following details {}", sideCarUrl, environment);
         environment.setOperationPerformed(true);
-
+        var sideCarUrlPart = sideCarUrl.split(":");
+        var host = sideCarUrlPart[1].replace("//", "");
+        var port = Integer.parseInt(sideCarUrlPart[2]);
+        LOG.info("upload url host {}, port {}", host, port);
         MultipartForm form = MultipartForm.create()
                 .textFileUpload("spa", operationResponse.spaName(), operationResponse.filePath().toAbsolutePath()
                         .toString(), "application/zip"
@@ -43,7 +46,7 @@ public class SideCarOperations {
                 .sideCarServiceUrl(operationResponse.getSideCarServiceUrl()).status(0)
                 .originatedFrom(this.getClass().toString());
 
-        return client.post("localhost").port(8081).uri("/api/upload").sendMultipartForm(form)
+        return client.post(host).port(port).uri("/api/upload").sendMultipartForm(form)
                 .map(item -> apply(responseOnFailure, item))
                 .onFailure().recoverWithItem(e -> responseOnFailure.errorMessage(e.getMessage()).build())
                 .subscribeAsCompletionStage()

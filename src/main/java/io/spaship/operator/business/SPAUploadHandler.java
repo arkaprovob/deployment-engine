@@ -6,6 +6,7 @@ import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.spaship.operator.service.k8s.Operator;
 import io.spaship.operator.service.k8s.SideCarOperations;
 import io.spaship.operator.type.Environment;
+import io.spaship.operator.type.EventStructure;
 import io.spaship.operator.type.OperationResponse;
 import io.spaship.operator.type.SpashipMapping;
 import io.spaship.operator.util.ReUsableItems;
@@ -36,11 +37,14 @@ public class SPAUploadHandler {
     private final Operator k8sOperator;
     private final SideCarOperations sideCarOperations;
     private final String nameSpace;
+    private final EventManager eventManager;
 
-    public SPAUploadHandler(Operator k8sOperator, SideCarOperations sideCarOperations, @Named("namespace") String nameSpace) {
+    public SPAUploadHandler(Operator k8sOperator, SideCarOperations sideCarOperations,
+                            @Named("namespace") String nameSpace, EventManager eventManager) {
         this.k8sOperator = k8sOperator;
         this.sideCarOperations = sideCarOperations;
         this.nameSpace = nameSpace;
+        this.eventManager = eventManager;
     }
 
 
@@ -126,7 +130,13 @@ public class SPAUploadHandler {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        eventManager.queue(
+                EventStructure.builder()
+                        .websiteName(input.getValue2())
+                        .environmentName("NA")
+                        .uuid(input.getValue1())
+                        .state("mapping file loaded into memory")
+                        .build());
         var output = new Triplet<>(spaMappingReference, input.getValue1(), input.getValue0());
         LOG.debug("output of spaMappingIntoMemory  {} ", output);
         return output;
@@ -144,6 +154,14 @@ public class SPAUploadHandler {
                 .collect(Collectors.toList());
 
         assert environmentSize == allEnvironments.size();
+
+        eventManager.queue(
+                EventStructure.builder()
+                        .websiteName(spaMapping.getWebsiteName())
+                        .environmentName("NA")
+                        .uuid(input.getValue1())
+                        .state("environments detected")
+                        .build());
 
         return allEnvironments;
     }

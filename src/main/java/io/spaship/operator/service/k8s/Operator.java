@@ -10,10 +10,12 @@ import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.spaship.operator.business.EventManager;
 import io.spaship.operator.exception.FeatureNotImplemented;
 import io.spaship.operator.exception.ResourceNotFoundException;
 import io.spaship.operator.service.Operations;
 import io.spaship.operator.type.Environment;
+import io.spaship.operator.type.EventStructure;
 import io.spaship.operator.type.OperationResponse;
 import io.spaship.operator.util.ReUsableItems;
 import org.javatuples.Pair;
@@ -32,9 +34,11 @@ public class Operator implements Operations {
     private static final Logger LOG = LoggerFactory.getLogger(Operator.class);
 
     private final KubernetesClient k8sClient;
+    private final EventManager eventManager;
 
-    public Operator(KubernetesClient k8sClient) {
+    public Operator(KubernetesClient k8sClient, EventManager eventManager) {
         this.k8sClient = k8sClient;
+        this.eventManager = eventManager;
     }
 
 
@@ -143,25 +147,41 @@ public class Operator implements Operations {
 
     private void processK8sList(KubernetesList result, UUID tracing, String nameSpace) {
 
+        var eb = EventStructure.builder().uuid(tracing);
+
         result.getItems().forEach(item -> {
             if (item instanceof Service) {
                 LOG.debug("creating new Service in K8s, tracing = {}", tracing);
                 k8sClient.services().inNamespace(nameSpace).createOrReplace((Service) item);
+                eb.websiteName(item.getMetadata().getLabels().get("website"))
+                        .websiteName(item.getMetadata().getLabels().get("environment"))
+                        .state("service created");
             }
             if (item instanceof Deployment) {
                 LOG.debug("creating new Deployment in K8s, tracing = {}", tracing);
                 k8sClient.apps().deployments().inNamespace(nameSpace).createOrReplace((Deployment) item);
+                eb.websiteName(item.getMetadata().getLabels().get("website"))
+                        .websiteName(item.getMetadata().getLabels().get("environment"))
+                        .state("deployment created");
             }
             if (item instanceof Route) {
                 LOG.debug("creating new Route in K8s, tracing = {}", tracing);
                 ((OpenShiftClient) k8sClient).routes().inNamespace(nameSpace).createOrReplace((Route) item);
+                eb.websiteName(item.getMetadata().getLabels().get("website"))
+                        .websiteName(item.getMetadata().getLabels().get("environment"))
+                        .state("route created");
             }
             if (item instanceof ConfigMap) {
                 LOG.debug("creating new ConfigMap in K8s, tracing = {}", tracing);
                 k8sClient.configMaps().inNamespace(nameSpace).createOrReplace((ConfigMap) item);
+                eb.websiteName(item.getMetadata().getLabels().get("website"))
+                        .websiteName(item.getMetadata().getLabels().get("environment"))
+                        .state("configmap created");
             }
             LOG.debug("created resource in kubernetes, tracing = {}", tracing);
         });
+
+        eventManager.queue(eb.build());
     }
 
 

@@ -1,5 +1,7 @@
 package io.spaship.operator.service.k8s;
 
+import io.spaship.operator.business.EventManager;
+import io.spaship.operator.type.EventStructure;
 import io.spaship.operator.type.OperationResponse;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
@@ -17,14 +19,14 @@ import java.util.Objects;
 @ApplicationScoped
 public class SideCarOperations {
     private static final Logger LOG = LoggerFactory.getLogger(SideCarOperations.class);
-    private final Vertx vertx;
     private final WebClient client;
+    private final EventManager eventManager;
 
-    public SideCarOperations(Vertx vertx) {
-        this.vertx = vertx;
+    public SideCarOperations(Vertx vertx, EventManager eventManager) {
         WebClientOptions options = new WebClientOptions()
                 .setUserAgent("spaship-operator/0.0.1");
         this.client = WebClient.create(vertx, options);
+        this.eventManager = eventManager;
     }
 
     @SneakyThrows
@@ -46,11 +48,22 @@ public class SideCarOperations {
                 .sideCarServiceUrl(operationResponse.getSideCarServiceUrl()).status(0)
                 .originatedFrom(this.getClass().toString());
 
-        return client.post(host).port(port).uri("/api/upload").sendMultipartForm(form)
+        var opResp = client.post(host).port(port).uri("/api/upload").sendMultipartForm(form)
                 .map(item -> apply(responseOnFailure, item))
                 .onFailure().recoverWithItem(e -> responseOnFailure.errorMessage(e.getMessage()).build())
                 .subscribeAsCompletionStage()
                 .get();
+
+        eventManager.queue(
+                EventStructure.builder()
+                        .websiteName(opResp.getEnvironment().getWebsiteName())
+                        .environmentName(opResp.getEnvironment().getName())
+                        .uuid(operationResponse.getEnvironment().getTraceID())
+                        .state(opResp.getErrorMessage() == null ?
+                                "spa deployment ops performed" : "spa deployment ops failed")
+                        .build());
+
+        return opResp;
     }
 
     private OperationResponse apply(OperationResponse.OperationResponseBuilder responseOnFailure,

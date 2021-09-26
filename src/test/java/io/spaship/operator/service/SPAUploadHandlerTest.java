@@ -1,6 +1,5 @@
 package io.spaship.operator.service;
 
-import io.quarkus.test.junit.QuarkusTest;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,7 +17,7 @@ import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-@QuarkusTest
+//@QuarkusTest
 class SPAUploadHandlerTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(SPAUploadHandlerTest.class);

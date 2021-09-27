@@ -3,6 +3,7 @@ package io.spaship.operator.service.k8s;
 import io.spaship.operator.business.EventManager;
 import io.spaship.operator.type.EventStructure;
 import io.spaship.operator.type.OperationResponse;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -26,6 +27,7 @@ public class SideCarOperations {
         WebClientOptions options = new WebClientOptions()
                 .setUserAgent("spaship-operator/0.0.1");
         this.client = WebClient.create(vertx, options);
+
         this.eventManager = eventManager;
     }
 
@@ -51,7 +53,8 @@ public class SideCarOperations {
 
         var requestUri = host.concat(":").concat(port).concat("/api/upload");
         LOG.info("posting in  {}", requestUri);
-        var opResp = client.post(requestUri).sendMultipartForm(form)
+
+        var opResp = client.requestAbs(HttpMethod.POST, requestUri).sendMultipartForm(form)
                 .map(item -> apply(responseOnFailure, item))
                 .onFailure()
                 .recoverWithItem(e -> fallbackResponse(responseOnFailure, e))

@@ -37,9 +37,9 @@ public class SideCarOperations {
         LOG.info("sidecar url {} invoked with the following details {}", sideCarUrl, environment);
         environment.setOperationPerformed(true);
         var sideCarUrlPart = sideCarUrl.split(":");
-        var host = sideCarUrlPart[1].replace("//", "");
+        var host = "http://".concat(sideCarUrlPart[1].replace("//", ""));
         var port = Integer.parseInt(sideCarUrlPart[2]);
-        LOG.info("upload url host {}, port {}", host, port);
+
         MultipartForm form = MultipartForm.create()
                 .textFileUpload("spa", operationResponse.spaName(), operationResponse.filePath().toAbsolutePath()
                         .toString(), "application/zip"
@@ -49,10 +49,11 @@ public class SideCarOperations {
                 .sideCarServiceUrl(operationResponse.getSideCarServiceUrl()).status(0)
                 .originatedFrom(this.getClass().toString());
 
-        var opResp = client.post(host).port(port).uri("/api/upload").sendMultipartForm(form)
+        LOG.info("posting in  {}{}{}", host, port, "/api/upload");
+        var opResp = client.post(port, host, "/api/upload").sendMultipartForm(form)
                 .map(item -> apply(responseOnFailure, item))
                 .onFailure()
-                .recoverWithItem(e -> responseOnFailure.errorMessage(e.getMessage()).build())
+                .recoverWithItem(e -> fallbackResponse(responseOnFailure, e))
                 .subscribeAsCompletionStage()
                 .get();
 
@@ -66,6 +67,11 @@ public class SideCarOperations {
                         .build());
 
         return opResp;
+    }
+
+    private OperationResponse fallbackResponse(OperationResponse.OperationResponseBuilder responseOnFailure, Throwable e) {
+        LOG.error("failed to upload into sidecar container due to {}", e.getMessage());
+        return responseOnFailure.errorMessage(e.getMessage()).build();
     }
 
     private OperationResponse apply(OperationResponse.OperationResponseBuilder responseOnFailure,

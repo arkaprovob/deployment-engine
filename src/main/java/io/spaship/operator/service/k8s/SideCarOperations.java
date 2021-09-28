@@ -41,10 +41,11 @@ public class SideCarOperations {
         executor.submit(() -> {
             var envName = operationResponse.getEnvironmentName();
             if (operationResponse.getStatus() == 1) {
-                LOG.info("env {} is a new environment hence blocking for 60s", envName);
+                LOG.info("env {} is a new environment hence blocking sidecar ops for 60s", envName);
                 blockFor(60000);
             }
-            createOrUpdateSPDirectory(operationResponse);
+            var res = createOrUpdateSPDirectory(operationResponse);
+            LOG.info("sidecar ops completed with following response {}", res);
         });
     }
 
@@ -75,7 +76,7 @@ public class SideCarOperations {
                 .originatedFrom(this.getClass().toString());
 
         var requestUri = host.concat(":").concat(port).concat("/api/upload");
-        LOG.info("uploading file in env {} url, {}", operationResponse.getEnvironmentName(), requestUri);
+        LOG.info("sidecar env {} url, {}", operationResponse.getEnvironmentName(), requestUri);
 
         var opResp = client.requestAbs(HttpMethod.POST, requestUri).sendMultipartForm(form)
                 .map(item -> apply(responseOnFailure, item))
@@ -97,7 +98,7 @@ public class SideCarOperations {
     }
 
     private OperationResponse fallbackResponse(OperationResponse.OperationResponseBuilder responseOnFailure, Throwable e) {
-        LOG.error("failed to upload into sidecar container due to {}", e.getMessage());
+        LOG.error("sidecar upload ops failed due to {}", e.getMessage());
         return responseOnFailure.errorMessage(e.getMessage()).build();
     }
 

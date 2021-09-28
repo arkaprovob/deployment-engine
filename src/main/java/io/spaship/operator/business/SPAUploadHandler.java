@@ -97,9 +97,10 @@ public class SPAUploadHandler {
                 .subscribe()
                 .with(operationResponse -> {
                     if (Objects.nonNull(operationResponse.getErrorMessage())) {
-                        LOG.warn("ops failed {}", operationResponse.getErrorMessage());
+                        LOG.warn("operator file handling ops failed for env {} due to  {} ",
+                                operationResponse.getEnvironmentName(), operationResponse.getErrorMessage());
                     } else {
-                        LOG.info("operation completed successfully with details {}", operationResponse);
+                        LOG.info("operator file handling ops with response {}", operationResponse);
                     }
 
                 });

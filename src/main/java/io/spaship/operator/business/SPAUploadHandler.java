@@ -100,7 +100,7 @@ public class SPAUploadHandler {
                         LOG.warn("operator file handling ops failed for env {} due to  {} ",
                                 operationResponse.getEnvironmentName(), operationResponse.getErrorMessage());
                     } else {
-                        LOG.info("operator file handling ops with response {}", operationResponse);
+                        LOG.info("operator file handling ops completed with response {}", operationResponse);
                     }
 
                 });

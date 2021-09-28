@@ -33,7 +33,7 @@ objects:
   - kind: ConfigMap
     apiVersion: v1
     metadata:
-      name: sidecar-config
+      name: sidecar-config-${ENV}
       labels:
         website: ${WEBSITE}
         managedBy: spaship
@@ -152,7 +152,7 @@ objects:
                   subpath: data
               envFrom:
                 - configMapRef:
-                    name: sidecar-config
+                    name: sidecar-config-${ENV}
 
           volumes:
             - name: data

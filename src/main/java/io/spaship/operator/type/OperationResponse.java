@@ -30,6 +30,10 @@ public class OperationResponse {
         return this.environment;
     }
 
+    public String getEnvironmentName() {
+        return environment.getName();
+    }
+
     public String getSideCarServiceUrl() {
         return this.sideCarServiceUrl;
     }
@@ -109,9 +113,9 @@ public class OperationResponse {
                 case 0:
                     return message("skipped");
                 case 1:
-                    return message("created");
+                    return message("created/accepted");
                 case 2:
-                    return message("modified");
+                    return message("modified/ignored");
                 case 3:
                     return message("deleted");
 

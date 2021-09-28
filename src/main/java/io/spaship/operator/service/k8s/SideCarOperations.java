@@ -3,6 +3,7 @@ package io.spaship.operator.service.k8s;
 import io.spaship.operator.business.EventManager;
 import io.spaship.operator.type.EventStructure;
 import io.spaship.operator.type.OperationResponse;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.core.buffer.Buffer;
@@ -15,23 +16,47 @@ import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @ApplicationScoped
 public class SideCarOperations {
     private static final Logger LOG = LoggerFactory.getLogger(SideCarOperations.class);
     private final WebClient client;
     private final EventManager eventManager;
+    private final ExecutorService executor
+            = Executors.newFixedThreadPool(10);
 
     public SideCarOperations(Vertx vertx, EventManager eventManager) {
         WebClientOptions options = new WebClientOptions()
                 .setUserAgent("spaship-operator/0.0.1");
         this.client = WebClient.create(vertx, options);
+
         this.eventManager = eventManager;
     }
 
+
+    //TODO 1. remove manual thread handling 2. replace hard coded time with pod ready status
+    public void asyncCreateOrUpdateSPDirectory(OperationResponse operationResponse) {
+        executor.submit(() -> {
+            var envName = operationResponse.getEnvironmentName();
+            if (operationResponse.getStatus() == 1) {
+                LOG.info("env {} is a new environment hence blocking for 30s", envName);
+                blockFor(30000);
+            }
+            createOrUpdateSPDirectory(operationResponse);
+        });
+    }
+
+    @SneakyThrows
+    private void blockFor(int timeInMillis) {
+        Thread.sleep(timeInMillis);
+    }
+
+
     @SneakyThrows
     //TODO break into multiple methods
-    public OperationResponse createOrUpdateSPDirectory(OperationResponse operationResponse) {
+    private OperationResponse createOrUpdateSPDirectory(OperationResponse operationResponse) {
         var sideCarUrl = operationResponse.getSideCarServiceUrl().replace("tcp", "http");
         var environment = operationResponse.getEnvironment();
         LOG.info("sidecar url {} invoked with the following details {}", sideCarUrl, environment);
@@ -50,8 +75,9 @@ public class SideCarOperations {
                 .originatedFrom(this.getClass().toString());
 
         var requestUri = host.concat(":").concat(port).concat("/api/upload");
-        LOG.info("posting in  {}", requestUri);
-        var opResp = client.post(requestUri).sendMultipartForm(form)
+        LOG.info("uploading file in  {}", requestUri);
+
+        var opResp = client.requestAbs(HttpMethod.POST, requestUri).sendMultipartForm(form)
                 .map(item -> apply(responseOnFailure, item))
                 .onFailure()
                 .recoverWithItem(e -> fallbackResponse(responseOnFailure, e))

@@ -52,7 +52,7 @@ public class SideCarOperations {
                 .originatedFrom(this.getClass().toString());
 
         var requestUri = host.concat(":").concat(port).concat("/api/upload");
-        LOG.info("posting in  {}", requestUri);
+        LOG.info("uploading file in  {}", requestUri);
 
         var opResp = client.requestAbs(HttpMethod.POST, requestUri).sendMultipartForm(form)
                 .map(item -> apply(responseOnFailure, item))

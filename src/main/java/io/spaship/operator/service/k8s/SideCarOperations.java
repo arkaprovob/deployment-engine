@@ -42,7 +42,7 @@ public class SideCarOperations {
             var envName = operationResponse.getEnvironmentName();
             if (operationResponse.getStatus() == 1) {
                 LOG.info("env {} is a new environment hence blocking for 30s", envName);
-                blockFor(30000);
+                blockFor(60000);
             }
             createOrUpdateSPDirectory(operationResponse);
         });

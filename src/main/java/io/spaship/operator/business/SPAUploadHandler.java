@@ -59,7 +59,7 @@ public class SPAUploadHandler {
                 .map(this::buildEnvironmentList)
                 .onItem()
                 .transformToMulti(envList -> Multi.createFrom().iterable(envList))
-                .emitOn(executor)
+                .invoke(environment -> LOG.info("{} running on a separate thread", environment.getName()))
                 .map(env -> {
                     if (env.isUpdateRestriction() && k8sOperator.environmentExists(env)) {
                         LOG.debug("environment exists but update restriction enforced, " +

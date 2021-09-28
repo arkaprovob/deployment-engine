@@ -41,7 +41,7 @@ public class SideCarOperations {
         executor.submit(() -> {
             var envName = operationResponse.getEnvironmentName();
             if (operationResponse.getStatus() == 1) {
-                LOG.info("env {} is a new environment hence blocking for 30s", envName);
+                LOG.info("env {} is a new environment hence blocking for 60s", envName);
                 blockFor(60000);
             }
             createOrUpdateSPDirectory(operationResponse);

@@ -192,10 +192,10 @@ public class Operator implements Operations {
                         .state("configmap created");
             }
             if (item instanceof IngressController) {
-                LOG.debug("IngressController found");
+                LOG.info("IngressController found");
             }
             if (item instanceof Ingress) {
-                LOG.debug("Ingress found");
+                LOG.info("Ingress found");
             }
 
             eventManager.queue(eb.build());

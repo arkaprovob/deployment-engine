@@ -5,6 +5,7 @@ import io.fabric8.kubernetes.api.model.KubernetesList;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Service;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.openshift.api.model.Route;
 import io.fabric8.openshift.client.OpenShiftClient;
@@ -18,15 +19,13 @@ import io.spaship.operator.type.Environment;
 import io.spaship.operator.type.EventStructure;
 import io.spaship.operator.type.OperationResponse;
 import io.spaship.operator.util.ReUsableItems;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 
 @ApplicationScoped
@@ -35,14 +34,18 @@ public class Operator implements Operations {
 
     private final KubernetesClient k8sClient;
     private final EventManager eventManager;
+    private final String domain;
 
     public Operator(KubernetesClient k8sClient, EventManager eventManager) {
         this.k8sClient = k8sClient;
         this.eventManager = eventManager;
+        domain = ConfigProvider.getConfig().getValue("operator.domain.name", String.class);
     }
 
 
     public OperationResponse createOrUpdateEnvironment(Environment environment) {
+
+        domainValidation(domain);
 
         ReUsableItems.enforceOpsLocking(new Pair<>(environment.getIdentification(), environment.getTraceID()));
 
@@ -57,6 +60,13 @@ public class Operator implements Operations {
         LOG.debug("\n");
         return OperationResponse.builder().environment(environment).sideCarServiceUrl(sideCarSvcUrl)
                 .originatedFrom(this.getClass().toString()).status(envExists ? 2 : 1).build();
+    }
+
+    private void domainValidation(String domain) {
+        if (Objects.isNull(domain)) {
+            LOG.error("the domain name is missing");
+            throw new ResourceNotFoundException("property operator.domain.name is not set");
+        }
     }
 
 
@@ -135,7 +145,8 @@ public class Operator implements Operations {
                 "WEBSITE", environment.getWebsiteName().toLowerCase(),
                 //"TRACE_ID", environment.getTraceID().toString().toLowerCase(),
                 "ENV", environment.getName().toLowerCase(),
-                "WEBSITE_VERSION", environment.getWebsiteVersion().toLowerCase()
+                "WEBSITE_VERSION", environment.getWebsiteVersion().toLowerCase(),
+                "DOMAIN", domain
         );
         LOG.debug("building KubernetesList, templateParameters are as follows {}", templateParameters);
         return ((OpenShiftClient) k8sClient)
@@ -179,6 +190,11 @@ public class Operator implements Operations {
                         .environmentName(item.getMetadata().getLabels().get("environment"))
                         .state("configmap created");
             }
+            if (item instanceof Ingress) {
+                LOG.debug("creating new Ingress controller in K8s, tracing = {}", tracing);
+                k8sClient.network().v1().ingresses().inNamespace(nameSpace).createOrReplace((Ingress) item);
+            }
+
             eventManager.queue(eb.build());
         });
 

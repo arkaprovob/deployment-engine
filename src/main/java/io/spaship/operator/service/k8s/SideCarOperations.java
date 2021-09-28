@@ -25,7 +25,7 @@ public class SideCarOperations {
     private final WebClient client;
     private final EventManager eventManager;
     private final ExecutorService executor
-            = Executors.newFixedThreadPool(10);
+            = Executors.newFixedThreadPool(10); //TODO smartly handle this thread as it will only support 10 environments at a time
 
     public SideCarOperations(Vertx vertx, EventManager eventManager) {
         WebClientOptions options = new WebClientOptions()
@@ -41,10 +41,11 @@ public class SideCarOperations {
         executor.submit(() -> {
             var envName = operationResponse.getEnvironmentName();
             if (operationResponse.getStatus() == 1) {
-                LOG.info("env {} is a new environment hence blocking for 30s", envName);
-                blockFor(30000);
+                LOG.info("env {} is a new environment hence blocking sidecar ops for 60s", envName);
+                blockFor(60000);
             }
-            createOrUpdateSPDirectory(operationResponse);
+            var res = createOrUpdateSPDirectory(operationResponse);
+            LOG.info("sidecar ops completed with following response {}", res);
         });
     }
 
@@ -59,7 +60,7 @@ public class SideCarOperations {
     private OperationResponse createOrUpdateSPDirectory(OperationResponse operationResponse) {
         var sideCarUrl = operationResponse.getSideCarServiceUrl().replace("tcp", "http");
         var environment = operationResponse.getEnvironment();
-        LOG.info("sidecar url {} invoked with the following details {}", sideCarUrl, environment);
+        LOG.debug("sidecar url {} invoked with the following details {}", sideCarUrl, environment);
         environment.setOperationPerformed(true);
         var sideCarUrlPart = sideCarUrl.split(":");
         var host = "http://".concat(sideCarUrlPart[1].replace("//", ""));
@@ -75,7 +76,7 @@ public class SideCarOperations {
                 .originatedFrom(this.getClass().toString());
 
         var requestUri = host.concat(":").concat(port).concat("/api/upload");
-        LOG.info("uploading file in  {}", requestUri);
+        LOG.info("sidecar env {} url, {}", operationResponse.getEnvironmentName(), requestUri);
 
         var opResp = client.requestAbs(HttpMethod.POST, requestUri).sendMultipartForm(form)
                 .map(item -> apply(responseOnFailure, item))
@@ -97,7 +98,7 @@ public class SideCarOperations {
     }
 
     private OperationResponse fallbackResponse(OperationResponse.OperationResponseBuilder responseOnFailure, Throwable e) {
-        LOG.error("failed to upload into sidecar container due to {}", e.getMessage());
+        LOG.error("sidecar upload ops failed due to {}", e.getMessage());
         return responseOnFailure.errorMessage(e.getMessage()).build();
     }
 

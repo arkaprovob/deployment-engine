@@ -25,7 +25,7 @@ public class SideCarOperations {
     private final WebClient client;
     private final EventManager eventManager;
     private final ExecutorService executor
-            = Executors.newFixedThreadPool(10);
+            = Executors.newFixedThreadPool(10); //TODO smartly handle this thread as it will only support 10 environments at a time
 
     public SideCarOperations(Vertx vertx, EventManager eventManager) {
         WebClientOptions options = new WebClientOptions()

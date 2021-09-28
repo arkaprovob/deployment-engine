@@ -29,11 +29,13 @@ parameters:
   - name: "IMAGE_API_VERSION"
     value: "master"
     required: false
+  - name: "DOMAIN"
+    required: true
 objects:
   - kind: ConfigMap
     apiVersion: v1
     metadata:
-      name: sidecar-config-${ENV}
+      name: sidecar-config-${WEBSITE}-${ENV}
       labels:
         website: ${WEBSITE}
         managedBy: spaship
@@ -45,7 +47,6 @@ objects:
       SIDECAR_ENVIRONMENTNAME: ${ENV}
       SIDECAR_WEBSITE_VERSION: ${WEBSITE_VERSION}
       SPASHIP_MAPPING_FILE: ".spaship"
-
   - kind: Service
     apiVersion: v1
     metadata:
@@ -152,8 +153,24 @@ objects:
                   subpath: data
               envFrom:
                 - configMapRef:
-                    name: sidecar-config-${ENV}
+                    name: sidecar-config-${WEBSITE}-${ENV}
 
           volumes:
             - name: data
               emptyDir: { }
+  - kind: Ingress
+    apiVersion: networking.k8s.io/v1
+    metadata:
+      name: ing-${WEBSITE}-${ENV}
+    spec:
+      rules:
+        - host: ${WEBSITE}.${ENV}.${DOMAIN}
+          http:
+            paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: svc-${WEBSITE}-${ENV}
+                    port:
+                      number: 80

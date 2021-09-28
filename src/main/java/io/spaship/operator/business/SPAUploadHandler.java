@@ -59,6 +59,7 @@ public class SPAUploadHandler {
                 .map(this::buildEnvironmentList)
                 .onItem()
                 .transformToMulti(envList -> Multi.createFrom().iterable(envList))
+                .emitOn(executor)
                 .map(env -> {
                     if (env.isUpdateRestriction() && k8sOperator.environmentExists(env)) {
                         LOG.debug("environment exists but update restriction enforced, " +
@@ -82,9 +83,6 @@ public class SPAUploadHandler {
 
                     return k8sOperator.createOrUpdateEnvironment(env);
                 })
-                //.onFailure()
-                //.retry()
-                //.atMost(3)
                 .map(opsResponse -> {
                     if (opsResponse.getStatus() == -1 || opsResponse.getStatus() == 0) {
                         LOG.debug("no operation performed");

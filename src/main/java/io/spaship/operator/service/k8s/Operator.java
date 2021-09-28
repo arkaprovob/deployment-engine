@@ -56,7 +56,7 @@ public class Operator implements Operations {
         ReUsableItems.releaseLock(environment.getIdentification());
         LOG.debug("\n");
         return OperationResponse.builder().environment(environment).sideCarServiceUrl(sideCarSvcUrl)
-                .originatedFrom(this.getClass().toString()).status(1).build();
+                .originatedFrom(this.getClass().toString()).status(envExists ? 2 : 1).build();
     }
 
 

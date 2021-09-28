@@ -1,5 +1,7 @@
 package io.spaship.operator.service.k8s;
 
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.spaship.operator.business.EventManager;
 import io.spaship.operator.type.EventStructure;
 import io.spaship.operator.type.OperationResponse;
@@ -16,12 +18,14 @@ import org.slf4j.LoggerFactory;
 
 import javax.enterprise.context.ApplicationScoped;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 
 @ApplicationScoped
 public class SideCarOperations {
     private static final Logger LOG = LoggerFactory.getLogger(SideCarOperations.class);
     private final WebClient client;
     private final EventManager eventManager;
+    private final Executor executor = Infrastructure.getDefaultExecutor();
 
     public SideCarOperations(Vertx vertx, EventManager eventManager) {
         WebClientOptions options = new WebClientOptions()
@@ -30,6 +34,16 @@ public class SideCarOperations {
 
         this.eventManager = eventManager;
     }
+
+    public Uni<OperationResponse> asyncCreateOrUpdateSPDirectory(OperationResponse operationResponse) {
+        return Uni
+                .createFrom()
+                .item(operationResponse)
+                .emitOn(executor)
+                .onItem()
+                .transform(this::createOrUpdateSPDirectory);
+    }
+
 
     @SneakyThrows
     //TODO break into multiple methods

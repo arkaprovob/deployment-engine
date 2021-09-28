@@ -59,7 +59,7 @@ public class SideCarOperations {
     private OperationResponse createOrUpdateSPDirectory(OperationResponse operationResponse) {
         var sideCarUrl = operationResponse.getSideCarServiceUrl().replace("tcp", "http");
         var environment = operationResponse.getEnvironment();
-        LOG.info("sidecar url {} invoked with the following details {}", sideCarUrl, environment);
+        LOG.debug("sidecar url {} invoked with the following details {}", sideCarUrl, environment);
         environment.setOperationPerformed(true);
         var sideCarUrlPart = sideCarUrl.split(":");
         var host = "http://".concat(sideCarUrlPart[1].replace("//", ""));
@@ -75,7 +75,7 @@ public class SideCarOperations {
                 .originatedFrom(this.getClass().toString());
 
         var requestUri = host.concat(":").concat(port).concat("/api/upload");
-        LOG.info("uploading file in  {}", requestUri);
+        LOG.info("uploading file in env {} url, {}", operationResponse.getEnvironmentName(), requestUri);
 
         var opResp = client.requestAbs(HttpMethod.POST, requestUri).sendMultipartForm(form)
                 .map(item -> apply(responseOnFailure, item))

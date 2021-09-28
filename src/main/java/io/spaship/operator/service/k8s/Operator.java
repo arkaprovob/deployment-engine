@@ -8,7 +8,6 @@ import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.networking.v1.Ingress;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.openshift.api.model.Route;
-import io.fabric8.openshift.api.model.operator.v1.IngressController;
 import io.fabric8.openshift.client.OpenShiftClient;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
@@ -191,11 +190,8 @@ public class Operator implements Operations {
                         .environmentName(item.getMetadata().getLabels().get("environment"))
                         .state("configmap created");
             }
-            if (item instanceof IngressController) {
-                LOG.info("IngressController found");
-            }
             if (item instanceof Ingress) {
-                LOG.info("Ingress found");
+                LOG.debug("creating new Ingress controller in K8s, tracing = {}", tracing);
                 k8sClient.network().v1().ingresses().inNamespace(nameSpace).createOrReplace((Ingress) item);
             }
 

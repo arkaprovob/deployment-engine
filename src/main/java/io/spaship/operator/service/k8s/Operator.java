@@ -196,6 +196,7 @@ public class Operator implements Operations {
             }
             if (item instanceof Ingress) {
                 LOG.info("Ingress found");
+                k8sClient.network().v1().ingresses().inNamespace(nameSpace).createOrReplace((Ingress) item);
             }
 
             eventManager.queue(eb.build());

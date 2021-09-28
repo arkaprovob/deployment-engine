@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
@@ -59,7 +58,6 @@ public class SPAUploadHandler {
                 .map(this::buildEnvironmentList)
                 .onItem()
                 .transformToMulti(envList -> Multi.createFrom().iterable(envList))
-                .invoke(environment -> LOG.info("{} running on a separate thread", environment.getName()))
                 .map(env -> {
                     if (env.isUpdateRestriction() && k8sOperator.environmentExists(env)) {
                         LOG.debug("environment exists but update restriction enforced, " +
@@ -88,13 +86,9 @@ public class SPAUploadHandler {
                         LOG.debug("no operation performed");
                         return opsResponse;
                     }
-
-                    return sideCarOperations.createOrUpdateSPDirectory(opsResponse);
+                    sideCarOperations.asyncCreateOrUpdateSPDirectory(opsResponse);
+                    return opsResponse;
                 })
-                .onFailure()
-                .retry()
-                .withBackOff(Duration.ofSeconds(5), Duration.ofSeconds(10))
-                .atMost(6)
                 .onFailure()
                 .recoverWithItem(throwable -> {
                     throwable.printStackTrace();

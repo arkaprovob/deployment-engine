@@ -1,18 +1,26 @@
-# spa-deployment-operator Project
+# spa-deployment-operator
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+This application creates new environment and deploy spas into them, maintain and manage those environments' lifecycle.
 
-If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
+## Documentation
+
+For more details on operator follow the [SPAship architecture document](https://spaship.io#operator)
+
+## Configurable Properties
+
+| Name | Description | Default value
+| --- | ----------- | ----------- |
+|application.k8s.namespace|Required when deployed in k8s cluster, usually computed from namespace file when deployed in pod|empty|
+|operator.event.bus.address|Application sends all operational events in this bus. The sse api also consumes this bus and publish events|spa-ops-event-channel|
+|operator.domain.name|Required to create the Ingress controller route for environment pods, and this property varies from cluster to cluster based on k8s service provider. |empty|
 
 ## Running the application in dev mode
 
-You can run your application in dev mode that enables live coding using:
+You can run this application in dev mode that enables live coding using:
 
 ```shell script
 ./mvnw compile quarkus:dev
 ```
-
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at http://localhost:8080/q/dev/.
 
 ## Packaging and running the application
 
@@ -33,29 +41,3 @@ If you want to build an _über-jar_, execute the following command:
 
 The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
 
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
-./mvnw package -Pnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Pnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/spa-deployment-operator-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult https://quarkus.io/guides/maven-tooling.html
-.
-
-## Provided Code
-
-### RESTEasy JAX-RS
-
-Easily start your RESTful Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started#the-jax-rs-resources)

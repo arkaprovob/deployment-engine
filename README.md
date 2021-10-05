@@ -41,3 +41,18 @@ If you want to build an _über-jar_, execute the following command:
 
 The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
 
+## Installation using Helm chart in a k8s cluster
+
+Navigate to the spa-deployment-operator directory by executing this command
+`cd spa-deployment-operator`
+
+and then apply the following command
+
+```
+helm install \
+--set image.repository=quay.io/arbhatta/operator \
+--set image.tag=develop \
+--set app.domain=<name of the cluster domain> \
+--set ingress.host=<name of the cluster domain> \
+operator .
+```

@@ -5,7 +5,7 @@ metadata:
   name: ingress-{{ include "spa-deployment-operator.fullname" . }}
 spec:
   rules:
-    - host: operator.{{ .Values.ingress.host }}
+    - host: {{ .Values.nameOverride }}.{{ .Values.ingress.host }}
       http:
         paths:
           - path: /
